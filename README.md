@@ -1,0 +1,1 @@
+# macos-spaces-auto-layout
