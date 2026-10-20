@@ -40,7 +40,7 @@ Build the window engine **in native Swift** (Accessibility + CoreGraphics + NSWo
 | 01 | [macOS native capabilities](01-macos-native-capabilities.md) | What macOS already offers (Spaces, Assign To Desktop, tiling, Stage Manager, Shortcuts) and why it isn't enough |
 | 02 | [Technical APIs](02-technical-apis.md) | Public APIs (CoreGraphics, NSScreen, Accessibility, NSWorkspace), private Spaces APIs and how often they break, permissions and distribution, identifying displays |
 | 03 | [Existing tools](03-existing-tools.md) | Survey of 17+ tools (Moom, Rectangle Pro, Stay, Hammerspoon, yabai, AeroSpace…), a comparison table, and known pain points |
-| 04 | [Recommended architecture](04-recommended-architecture.md) | Data model, apply algorithm, risks, phased roadmap, open questions |
+| 04 | [Recommended architecture](04-recommended-architecture.md) | Data model, apply algorithm, risks, phased roadmap |
 | 05 | [Fullscreen spike results](05-fullscreen-spike-results.md) | Measured reliability and timing of native fullscreen for 6 real apps, and what the engine must do differently |
 
 ## Feasibility at a glance

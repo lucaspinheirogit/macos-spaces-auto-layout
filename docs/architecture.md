@@ -100,7 +100,7 @@ Run them with `xcodebuild … test` (see the [README](../README.md#build-run-tes
 | Goal | Today | Needed (see [roadmap](roadmap.md)) |
 |---|---|---|
 | Setups are real desk arrangements | Generic "Display N" columns | Display fingerprints captured from the connected hardware (UUIDs) |
-| Apps go fullscreen or maximized on their display | Apps are only listed | Window engine using the Accessibility API, with a mode per app |
-| Switch automatically when moving between desks | None | Display change watcher, setup matching, auto-apply |
+| Apps go fullscreen or maximized on their display | Apps are only listed | Window engine using the Accessibility API, with a mode per app (Maximized by default) and a per-app option to launch the app if it isn't running |
+| Switch automatically when moving between desks | None | Display change watcher, setup matching, and a per-setup choice to apply automatically, ask first, or do nothing |
 | Manage setups | Rename and add apps only | Add and delete setups and displays; remove and reorder apps |
 | Easy install for others | Local Xcode build | Accessibility permission onboarding, notarized release |

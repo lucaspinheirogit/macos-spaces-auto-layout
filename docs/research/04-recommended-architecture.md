@@ -9,6 +9,9 @@
 | yabai / private Spaces APIs? | **No** | Break nearly every macOS release; some need SIP disabled ([02 §5](02-technical-apis.md#5-spaces-desktops-private-apis-only)) |
 | Engine tech | **Native Swift**: Accessibility API (AXUIElement), CoreGraphics (CGDisplay), NSWorkspace | All public and stable. One app, one permission |
 | Placement modes | **Maximized** (default, reliable) + **Native fullscreen** (opt-in, best-effort with checks) | Fullscreen per display has no direct API ([02 §4](02-technical-apis.md#4-accessibility-api-axuielement-moving-resizing-fullscreen)) |
+| Apps that aren't running | **Per app**: each app has a "launch if not running" option, on by default | Most apps should be ready when you sit down; some (a heavy IDE, a game) should only be arranged if you opened them |
+| Applying on display change | **Per setup**: off, ask first (default), or automatic | Asking first is the safe default while the engine is new; a desk you trust can be switched to automatic |
+| Apps with several windows | **One window per app in v1**: its main window, else its first standard window | Telling windows apart (by title or order) is the hard part; rules for several windows come later ([#18](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/18)) |
 | Setup identity | Set of display UUIDs + built-in flag + arrangement | Display IDs change across reboots; screen count is too coarse ([02 §2](02-technical-apis.md#2-identifying-displays)) |
 | Distribution | Developer ID + notarization, not sandboxed, outside the Mac App Store | The Accessibility API doesn't work in the sandbox |
 
@@ -51,13 +54,15 @@ struct DisplayFingerprint: Codable, Hashable {
 
 enum PlacementMode: String, Codable { case maximized, nativeFullscreen }
 
+enum ApplyMode: String, Codable { case off, ask, automatic }
+
 struct AppPlacement: Codable, Identifiable {
     var id = UUID()
     var bundleId: String        // source of truth (not display name!)
     var displayUUID: String     // which DisplayFingerprint
-    var mode: PlacementMode
-    var launchIfNotRunning = true
-    var windowTitlePattern: String? // optional, for multi-window apps (later)
+    var mode: PlacementMode = .maximized
+    var launchIfNotRunning = true   // per app; off = only arrange it if already open
+    var windowTitlePattern: String? // optional, for multi-window apps (Phase 3)
 }
 
 struct Setup: Codable, Identifiable {
@@ -65,7 +70,7 @@ struct Setup: Codable, Identifiable {
     var name: String                    // "Home desk", "MacBook only"
     var displays: [DisplayFingerprint]  // captured from current hardware
     var placements: [AppPlacement]
-    var autoApply = true
+    var applyMode: ApplyMode = .ask  // what happens when the displays match this setup
 }
 ```
 
@@ -78,12 +83,16 @@ on display change:
   wait until the display list is unchanged for ~2s (cap ~10s)
   fp = currentFingerprint()
   setup = matcher.bestMatch(fp)        // exact UUID set > same count+builtin+sizes > none
-  if setup?.autoApply: engine.apply(setup)
+  switch setup?.applyMode:
+    .automatic: engine.apply(setup)
+    .ask:       notify "Switch to <setup>?" → engine.apply(setup) on confirm
+    .off, nil:  do nothing ("Apply now" still works)
 
 engine.apply(setup):                   // one job at a time, cancel previous run
   for p in setup.placements (non-fullscreen first, then fullscreen, one by one):
-    app = running(p.bundleId) ?? launch(p.bundleId, activates: false)
-    win = await firstStandardWindow(app, timeout: 10s)   // AXObserver kAXWindowCreated + poll
+    app = running(p.bundleId)
+          ?? (p.launchIfNotRunning ? launch(p.bundleId, activates: false) : skip, report "not running")
+    win = await mainWindow(app, timeout: 10s)   // AXMainWindow, else first standard window; AXObserver kAXWindowCreated + poll
     target = screen(for: p.displayUUID) ?? fallbackScreen
     if p.mode == .maximized:
         if isFullscreen(win): await setFullscreen(win, false)   // verified
@@ -101,7 +110,7 @@ Key design rules (where Hammerspoon-style scripts with fixed delays fall short):
 - **A step whose check fails stops that app's job and reports it** instead of carrying on.
 - Waits on Accessibility notifications, with polling as a fallback, instead of fixed delays.
 - Fullscreen transitions run strictly one at a time.
-- Apps that aren't running get launched.
+- Apps that aren't running get launched, unless that app's launch option is off.
 - Display identity comes from UUIDs, so the setup that applies is predictable.
 
 ## Risks
@@ -146,12 +155,3 @@ The phases as first recommended. The current plan is [roadmap.md](../roadmap.md)
 **Phase 4 (optional, later)**
 - Desktop (Space) placement using private APIs, behind an "experimental" flag.
 - Only if users ask for it, and following how yabai 7.1.25 does SIP-on window moves.
-
-## Open questions for the product owner
-
-These are tracked in [issue #5](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/5). Each answer goes into the doc it affects.
-
-1. Is **Maximized** acceptable as the default, with native fullscreen opt-in? (This affects how much depends on the spike.)
-2. Should the app **launch** missing apps, or only arrange apps that are already open?
-3. Should setups apply **automatically** on display change, or ask first ("Switch to Home desk?")?
-4. Apps with several windows (e.g. two browser windows on different screens): needed in v1?
