@@ -27,7 +27,7 @@ swift run fullscreen-spike bench com.apple.Safari com.apple.dt.Xcode --runs 10
 |---|---|
 | `displays` | Lists displays (index, name, UUID, main / built-in, bounds, visible area) and whether "Displays have separate Spaces" is on |
 | `windows <bundleId>` | Lists the app's windows: title, subrole, frame, fullscreen, which display |
-| `trace <bundleId>` | Toggles fullscreen once and prints the `AXFullScreen` attribute, the frame and the on-screen signals every 50 ms for 2.5 s |
+| `trace <bundleId> [--button]` | Toggles fullscreen once and prints the `AXFullScreen` attribute, the frame and the on-screen signals every 50 ms for 2.5 s. `--button` presses the window's green fullscreen button instead of setting the attribute |
 | `place <bundleId> [--display N] [--mode fullscreen\|maximized]` | Places the app's window once and prints each step with its timing |
 | `bench [bundleId…] [--runs N]` | Repeats placements for each app (default: the 7 test apps, 20 runs), writes `results/bench-<timestamp>.csv` and prints a summary table |
 

@@ -6,6 +6,8 @@ let usage = """
 
       displays                                   List displays and the separate-Spaces setting
       windows <bundleId>                         List an app's windows
+      trace <bundleId> [--button]                Toggle fullscreen once and sample it every 50 ms
+                                                 (--button: press the green button instead of AXFullScreen)
       place <bundleId> [--display N] [--mode fullscreen|maximized]
                                                  Place one app once and print each step
       bench [bundleId…] [--runs N]               Repeat placements and write results/<timestamp>.csv
@@ -100,7 +102,7 @@ func place(_ bundleId: String, displayIndex: Int, mode: PlacementMode) async {
 }
 
 /// Toggles fullscreen once and samples what's observable every 50 ms, to see when the transition really ends.
-func trace(_ bundleId: String) async {
+func trace(_ bundleId: String, useButton: Bool) async {
     requireAccessibility()
     guard let app = AppLauncher.running(bundleId), let window = AXApp(app).standardWindow else {
         fail("\(bundleId) has no standard window")
@@ -108,12 +110,13 @@ func trace(_ bundleId: String) async {
     let displays = Displays.current()
     guard let display = window.frame.flatMap({ Displays.display(for: $0, in: displays) }) else { fail("window is off-screen") }
     let target = !(window.isFullScreen ?? false)
-    print("Setting AXFullScreen=\(target) on \"\(window.title ?? "")\"")
+    print("\(useButton ? "Pressing the fullscreen button" : "Setting AXFullScreen=\(target)") on \"\(window.title ?? "")\"")
     print("    ms  attr   status others  frame")
     app.activate()
     window.raise()
     let start = ContinuousClock.now
-    window.setFullScreen(target)
+    let error = useButton ? window.pressFullScreenButton() : window.setFullScreen(target)
+    if error != .success { print("AXError \(error.rawValue)") }
     while ContinuousClock.now - start < .milliseconds(2500) {
         let ms = (ContinuousClock.now - start).components.attoseconds / 1_000_000_000_000_000
             + (ContinuousClock.now - start).components.seconds * 1000
@@ -251,8 +254,10 @@ func run() async {
         guard let bundleId = arguments.first else { fail(usage) }
         listWindows(bundleId)
     case "trace":
+        let useButton = arguments.contains("--button")
+        arguments.removeAll { $0 == "--button" }
         guard let bundleId = arguments.first else { fail(usage) }
-        await trace(bundleId)
+        await trace(bundleId, useButton: useButton)
     case "place":
         let displayIndex = option("--display").flatMap(Int.init) ?? 0
         guard let mode = PlacementMode(rawValue: option("--mode") ?? "fullscreen") else { fail(usage) }
