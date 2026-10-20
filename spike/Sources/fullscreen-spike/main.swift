@@ -1,5 +1,6 @@
 import AppKit
-import WindowKit
+import BenchReport
+import WindowEngine
 
 let usage = """
     Usage: fullscreen-spike <command>

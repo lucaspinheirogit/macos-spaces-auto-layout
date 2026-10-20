@@ -1,7 +1,7 @@
 import CoreGraphics
 import Testing
 
-@testable import WindowKit
+@testable import WindowEngine
 
 struct GeometryTests {
     @Test func convertsAppKitRectToTopLeft() {

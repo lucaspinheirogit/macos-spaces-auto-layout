@@ -1,6 +1,6 @@
 import Testing
 
-@testable import WindowKit
+@testable import WindowEngine
 
 @MainActor
 struct WaitTests {

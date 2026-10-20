@@ -1,6 +1,7 @@
 import Testing
 
-@testable import WindowKit
+@testable import BenchReport
+import WindowEngine
 
 struct ReportTests {
     private func report(_ app: String = "com.apple.Safari", scenario: String = "s", steps: [StepResult])
