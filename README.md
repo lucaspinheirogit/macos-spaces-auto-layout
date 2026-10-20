@@ -52,7 +52,7 @@ docs/
 Setups are saved as JSON at:
 
 ```
-~/Library/Application Support/Lucas-Pinheiro.macos-spaces-auto-layout/setups.json
+~/Library/Application Support/com.lucaspinheiro.SpacesAutoLayout/setups.json
 ```
 
 To reset the app to its default setups, delete that file.
