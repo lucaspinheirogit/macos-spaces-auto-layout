@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 A macOS app that arranges windows by "setup": the user defines which apps go on which display, and the app puts them there (maximized or in native fullscreen) when the user plugs into that desk. Today it's a setup editor; the window engine is being built.
 
 ## Start here
@@ -13,6 +15,16 @@ A macOS app that arranges windows by "setup": the user defines which apps go on 
 - [`docs/glossary.md`](docs/glossary.md): the domain words, the types that hold them, and coordinate systems
 - [`docs/research/`](docs/research/README.md): feasibility research and spike results (dated snapshots)
 - [`spike/README.md`](spike/README.md): the fullscreen spike CLI, built on the `Packages/WindowEngine` package
+
+## Code layout
+
+Three build units, each with its own tests:
+
+- **The app** (`macos-spaces-auto-layout/`, Xcode project): SwiftUI setup editor plus `setups.json` persistence. It links `WindowEngine` but doesn't call it yet.
+- **`Packages/WindowEngine`** (local Swift package): places one app's window on one display, maximized or fullscreen, through the Accessibility API. Everything that touches macOS comes in through protocol seams, so the tests run on fakes and a `TestClock`.
+- **`spike/`** (Swift package): the `fullscreen-spike` CLI and bench report that drive `WindowEngine` on real windows.
+
+Actor isolation differs between them, and that trips up new code: the app target defaults to `MainActor`, but its test target and `WindowEngine` don't. Mark test suites that use the store or editor model `@MainActor`, and mark package code that calls Accessibility, `NSWorkspace` or `NSScreen` `@MainActor`.
 
 ## Build and test
 
@@ -31,6 +43,13 @@ Window engine (Swift package, linked by the app):
 cd Packages/WindowEngine && swift build && swift test
 ```
 
+One suite (append `/<testName>()` for one test; the `xcodebuild` line takes the same project, scheme and destination as above):
+
+```sh
+xcodebuild … test -only-testing:macos-spaces-auto-layoutTests/DeskSetupStoreTests
+cd Packages/WindowEngine && swift test --filter WindowPlacerTests
+```
+
 Spike (Swift package):
 
 ```sh
@@ -44,7 +63,7 @@ swift format format -i --recursive .
 swift format lint --strict --recursive .
 ```
 
-CI (`.github/workflows/ci.yml`) runs all of the above on every pull request. Warnings are errors.
+CI (`.github/workflows/ci.yml`) runs all of the above on every pull request, building the app with `CODE_SIGN_IDENTITY=-`. Warnings are errors. No test needs Accessibility permission. The app's tests use temporary storage, so they never touch the real `setups.json`.
 
 `swift run fullscreen-spike bench` takes over the screen for minutes and needs Accessibility permission. Don't run it unless the user asks.
 
