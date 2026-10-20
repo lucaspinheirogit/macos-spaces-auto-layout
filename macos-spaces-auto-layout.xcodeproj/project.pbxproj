@@ -6,11 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		1B5F00A22F7ECF150020E511 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1B5F005C2F7ECF150020E511 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1B5F00632F7ECF150020E511;
+			remoteInfo = "macos-spaces-auto-layout";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "macos-spaces-auto-layoutTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B5F00642F7ECF150020E511 /* macos-spaces-auto-layout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "macos-spaces-auto-layout.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "macos-spaces-auto-layoutTests";
+			sourceTree = "<group>";
+		};
 		1B5F00662F7ECF150020E511 /* macos-spaces-auto-layout */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "macos-spaces-auto-layout";
@@ -19,6 +35,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1B5F00A52F7ECF150020E511 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1B5F00612F7ECF150020E511 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				1B5F00662F7ECF150020E511 /* macos-spaces-auto-layout */,
+				1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */,
 				1B5F00652F7ECF150020E511 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				1B5F00642F7ECF150020E511 /* macos-spaces-auto-layout.app */,
+				1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +73,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1B5F00A72F7ECF150020E511 /* macos-spaces-auto-layoutTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B5F00A82F7ECF150020E511 /* Build configuration list for PBXNativeTarget "macos-spaces-auto-layoutTests" */;
+			buildPhases = (
+				1B5F00A42F7ECF150020E511 /* Sources */,
+				1B5F00A52F7ECF150020E511 /* Frameworks */,
+				1B5F00A62F7ECF150020E511 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1B5F00A32F7ECF150020E511 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */,
+			);
+			name = "macos-spaces-auto-layoutTests";
+			packageProductDependencies = (
+			);
+			productName = "macos-spaces-auto-layoutTests";
+			productReference = 1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		1B5F00632F7ECF150020E511 /* macos-spaces-auto-layout */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1B5F006F2F7ECF160020E511 /* Build configuration list for PBXNativeTarget "macos-spaces-auto-layout" */;
@@ -83,6 +131,10 @@
 					1B5F00632F7ECF150020E511 = {
 						CreatedOnToolsVersion = 26.4;
 					};
+					1B5F00A72F7ECF150020E511 = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 1B5F00632F7ECF150020E511;
+					};
 				};
 			};
 			buildConfigurationList = 1B5F005F2F7ECF150020E511 /* Build configuration list for PBXProject "macos-spaces-auto-layout" */;
@@ -100,11 +152,19 @@
 			projectRoot = "";
 			targets = (
 				1B5F00632F7ECF150020E511 /* macos-spaces-auto-layout */,
+				1B5F00A72F7ECF150020E511 /* macos-spaces-auto-layoutTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1B5F00A62F7ECF150020E511 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1B5F00622F7ECF150020E511 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,6 +175,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1B5F00A42F7ECF150020E511 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1B5F00602F7ECF150020E511 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -123,6 +190,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1B5F00A32F7ECF150020E511 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1B5F00632F7ECF150020E511 /* macos-spaces-auto-layout */;
+			targetProxy = 1B5F00A22F7ECF150020E511 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1B5F006D2F7ECF160020E511 /* Debug */ = {
@@ -178,7 +253,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -235,7 +310,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -268,7 +343,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -297,7 +372,43 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		1B5F00A92F7ECF150020E511 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lucas-Pinheiro.macos-spaces-auto-layoutTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/macos-spaces-auto-layout.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/macos-spaces-auto-layout";
+			};
+			name = Debug;
+		};
+		1B5F00AA2F7ECF150020E511 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Lucas-Pinheiro.macos-spaces-auto-layoutTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/macos-spaces-auto-layout.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/macos-spaces-auto-layout";
 			};
 			name = Release;
 		};
@@ -318,6 +429,15 @@
 			buildConfigurations = (
 				1B5F00702F7ECF160020E511 /* Debug */,
 				1B5F00712F7ECF160020E511 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B5F00A82F7ECF150020E511 /* Build configuration list for PBXNativeTarget "macos-spaces-auto-layoutTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B5F00A92F7ECF150020E511 /* Debug */,
+				1B5F00AA2F7ECF150020E511 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
