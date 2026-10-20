@@ -30,10 +30,18 @@ let pauseBetweenRuns: Duration = .seconds(1)
 
 var arguments = Array(CommandLine.arguments.dropFirst())
 
+/// Removes `name` and its value from the arguments and returns the value, or nil if the option isn't given.
 func option(_ name: String) -> String? {
-    guard let index = arguments.firstIndex(of: name), index + 1 < arguments.count else { return nil }
+    guard let index = arguments.firstIndex(of: name) else { return nil }
+    guard index + 1 < arguments.count, !arguments[index + 1].hasPrefix("--") else { fail("\(name) needs a value") }
     let value = arguments[index + 1]
     arguments.removeSubrange(index...index + 1)
+    return value
+}
+
+func intOption(_ name: String, default defaultValue: Int) -> Int {
+    guard let raw = option(name) else { return defaultValue }
+    guard let value = Int(raw) else { fail("\(name) must be a whole number, got \"\(raw)\"") }
     return value
 }
 
@@ -51,14 +59,10 @@ func requireAccessibility() {
     }
 }
 
-func describe(_ frame: CGRect?) -> String {
-    guard let f = frame else { return "?" }
-    return "\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
-}
-
 func printStep(_ step: StepResult) {
     let name = step.name.padding(toLength: 18, withPad: " ", startingAt: 0)
-    print("  \(step.ok ? "✓" : "✗") \(name) \(String(format: "%5d", step.ms)) ms  \(step.detail)")
+    let attempts = step.attempts > 1 ? "attempts=\(step.attempts) " : ""
+    print("  \(step.ok ? "✓" : "✗") \(name) \(String(format: "%5d", step.ms)) ms  \(attempts)\(step.detail)")
 }
 
 // MARK: - Commands
@@ -69,7 +73,7 @@ func listDisplays() {
         let flags = [d.isMain ? "main" : nil, d.isBuiltin ? "built-in" : nil].compactMap { $0 }.joined(separator: ", ")
         print("[\(d.index)] \(d.name) (\(flags))")
         print("    uuid    \(d.uuid)")
-        print("    bounds  \(describe(d.bounds))   visible \(describe(d.visibleBounds))")
+        print("    bounds  \(Geometry.describe(d.bounds))   visible \(Geometry.describe(d.visibleBounds))")
     }
     print("Displays have separate Spaces: \(Displays.separateSpacesEnabled ? "on" : "OFF (fullscreen per display won't work)")")
 }
@@ -82,7 +86,7 @@ func listWindows(_ bundleId: String) {
     if windows.isEmpty { print("No windows visible to Accessibility (windows on other Spaces may be hidden).") }
     for (i, w) in windows.enumerated() {
         let display = w.frame.flatMap { Displays.display(for: $0, in: displays) }.map { "[\($0.index)]" } ?? "?"
-        print("#\(i) \"\(w.title ?? "")\" \(w.subrole ?? "?") frame=\(describe(w.frame)) fullscreen=\(w.isFullScreen.map(String.init) ?? "?") display=\(display)")
+        print("#\(i) \"\(w.title ?? "")\" \(w.subrole ?? "?") frame=\(Geometry.describe(w.frame)) fullscreen=\(w.isFullScreen.map(String.init) ?? "?") display=\(display)")
     }
 }
 
@@ -118,12 +122,11 @@ func trace(_ bundleId: String, useButton: Bool) async {
     let error = useButton ? window.pressFullScreenButton() : window.setFullScreen(target)
     if error != .success { print("AXError \(error.rawValue)") }
     while ContinuousClock.now - start < .milliseconds(2500) {
-        let ms = (ContinuousClock.now - start).components.attoseconds / 1_000_000_000_000_000
-            + (ContinuousClock.now - start).components.seconds * 1000
+        let ms = (ContinuousClock.now - start).milliseconds
         let attr = window.isFullScreen.map(String.init) ?? "?"
         let screen = Displays.onScreen(on: display, excludingPID: app.processIdentifier)
         print(String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
-              String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows), describe(window.frame))
+              String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows), Geometry.describe(window.frame))
         try? await Task.sleep(for: .milliseconds(50))
     }
 }
@@ -166,11 +169,13 @@ func bench(_ bundleIds: [String], runs: Int) async {
         // Remember how the app looked, then put it in a known starting state (not recorded).
         let wasRunning = AppLauncher.running(bundleId) != nil
         let before = wasRunning ? AppLauncher.running(bundleId).flatMap { AXApp($0).standardWindow } : nil
-        let initial = InitialState(
-            fullscreen: before?.isFullScreen ?? false,
-            displayIndex: displayIndex(of: before, in: displays) ?? 0,
-            frame: before?.frame
-        )
+        let initial = before.map { window in
+            InitialState(
+                fullscreen: window.isFullScreen ?? false,
+                displayIndex: displayIndex(of: window, in: displays) ?? 0,
+                frame: window.frame
+            )
+        }
         let baselineMode: PlacementMode = multiDisplay ? .fullscreen : .maximized
         let baseline = await placement.place(bundleId, on: displays[0], among: displays, mode: baselineMode)
         if !baseline.allSatisfy(\.ok) { print("  ! baseline placement failed; continuing anyway") }
@@ -200,8 +205,11 @@ func bench(_ bundleIds: [String], runs: Int) async {
         }
 
         try? await Task.sleep(for: pauseBetweenRuns)
-        if wasRunning {
+        if let initial {
             await restore(bundleId, to: initial, displays: displays)
+        } else if wasRunning {
+            // It had no window before; close the one the bench made it open.
+            AppLauncher.running(bundleId).flatMap { AXApp($0).standardWindow }?.close()
         } else {
             AppLauncher.running(bundleId)?.terminate()
         }
@@ -259,12 +267,12 @@ func run() async {
         guard let bundleId = arguments.first else { fail(usage) }
         await trace(bundleId, useButton: useButton)
     case "place":
-        let displayIndex = option("--display").flatMap(Int.init) ?? 0
+        let displayIndex = intOption("--display", default: 0)
         guard let mode = PlacementMode(rawValue: option("--mode") ?? "fullscreen") else { fail(usage) }
         guard let bundleId = arguments.first else { fail(usage) }
         await place(bundleId, displayIndex: displayIndex, mode: mode)
     case "bench":
-        let runs = option("--runs").flatMap(Int.init) ?? 20
+        let runs = intOption("--runs", default: 20)
         guard runs > 0 else { fail("--runs must be at least 1") }
         await bench(arguments.isEmpty ? testApps : arguments, runs: runs)
     default:

@@ -53,16 +53,26 @@ public struct AXWindow {
     /// `AXFullScreen = false` but respond to the button.
     @discardableResult
     public func pressFullScreenButton() -> AXError {
-        var value: CFTypeRef?
-        let error = AXUIElementCopyAttributeValue(element, kAXFullScreenButtonAttribute as CFString, &value)
-        guard error == .success, let raw = value, CFGetTypeID(raw) == AXUIElementGetTypeID() else {
-            return error == .success ? .noValue : error
-        }
-        return AXUIElementPerformAction(raw as! AXUIElement, kAXPressAction as CFString)
+        pressButton(kAXFullScreenButtonAttribute)
+    }
+
+    /// Presses the window's red close button, like a click.
+    @discardableResult
+    public func close() -> AXError {
+        pressButton(kAXCloseButtonAttribute)
     }
 
     public func raise() {
         AXUIElementPerformAction(element, kAXRaiseAction as CFString)
+    }
+
+    private func pressButton(_ attribute: String) -> AXError {
+        var value: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(element, attribute as CFString, &value)
+        guard error == .success, let raw = value, CFGetTypeID(raw) == AXUIElementGetTypeID() else {
+            return error == .success ? .noValue : error
+        }
+        return AXUIElementPerformAction(raw as! AXUIElement, kAXPressAction as CFString)
     }
 
     private func setSize(_ size: CGSize) -> Bool {

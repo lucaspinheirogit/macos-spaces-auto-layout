@@ -8,12 +8,15 @@ public struct StepResult: Sendable, Equatable {
     public let name: String
     public let ok: Bool
     public let ms: Int
+    /// How many times the step tried its action (move, maximize, enter fullscreen).
+    public let attempts: Int
     public let detail: String
 
-    public init(name: String, ok: Bool, ms: Int, detail: String = "") {
+    public init(name: String, ok: Bool, ms: Int, attempts: Int = 1, detail: String = "") {
         self.name = name
         self.ok = ok
         self.ms = ms
+        self.attempts = attempts
         self.detail = detail
     }
 }
@@ -44,9 +47,12 @@ public struct PlacementReport: Sendable, Equatable {
 
     public static let csvHeader = "app,run,scenario,from_display,to_display,mode,success,failed_step,total_ms,steps"
 
-    /// `steps` is `name:ms:ok` joined by `|`, e.g. `app:12:1|enter-fullscreen:810:1`.
+    /// `steps` is `name:ms:ok` joined by `|`, with `:attempts` appended when a step took more than one,
+    /// e.g. `app:12:1|enter-fullscreen:6424:1:2`.
     public var csvRow: String {
-        let stepsField = steps.map { "\($0.name):\($0.ms):\($0.ok ? 1 : 0)" }.joined(separator: "|")
+        let stepsField = steps.map { step in
+            "\(step.name):\(step.ms):\(step.ok ? 1 : 0)" + (step.attempts > 1 ? ":\(step.attempts)" : "")
+        }.joined(separator: "|")
         return [
             app, String(run), scenario, fromDisplay.map(String.init) ?? "", String(toDisplay),
             mode.rawValue, success ? "1" : "0", failedStep ?? "", String(totalMs), stepsField,

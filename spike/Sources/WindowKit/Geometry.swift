@@ -31,6 +31,17 @@ public enum Geometry {
             && frame.minY - bounds.minY <= maxTopInset
     }
 
+    /// Whether `rect`'s center lies inside `bounds`. A window hanging over a display's edge doesn't count as on it.
+    public static func isCentered(_ rect: CGRect, in bounds: CGRect) -> Bool {
+        bounds.contains(CGPoint(x: rect.midX, y: rect.midY))
+    }
+
+    /// `x,y wxh` in whole points, or `?` for no frame.
+    public static func describe(_ frame: CGRect?) -> String {
+        guard let f = frame else { return "?" }
+        return "\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
+    }
+
     private static func area(of rect: CGRect) -> CGFloat {
         rect.isNull ? 0 : rect.width * rect.height
     }

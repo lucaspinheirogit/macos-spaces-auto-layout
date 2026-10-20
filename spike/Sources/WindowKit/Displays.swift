@@ -60,12 +60,14 @@ public enum Displays {
     }
 
     /// Mission Control's "Displays have separate Spaces". Stored inverted as `com.apple.spaces spans-displays`.
+    /// Reading another app's preferences domain only works outside the App Sandbox.
     public static var separateSpacesEnabled: Bool {
         !(UserDefaults(suiteName: "com.apple.spaces")?.bool(forKey: "spans-displays") ?? false)
     }
 
     /// What's on screen on a display, read from `CGWindowListCopyWindowInfo` (owner PIDs, layers and bounds only,
-    /// so no Screen Recording permission is needed).
+    /// so no Screen Recording permission is needed). A window counts for the display its center is on, so one
+    /// overhanging from a neighbouring display isn't counted.
     public struct OnScreen: Sendable, Equatable {
         /// Menu bar status items (Control Center, menu extras). Hidden while a fullscreen Space is showing.
         public let statusItems: Int
@@ -82,7 +84,7 @@ public enum Displays {
         for info in infos {
             guard let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
                   let bounds = CGRect(dictionaryRepresentation: boundsDict),
-                  bounds.width > 1, bounds.height > 1, bounds.intersects(display.bounds),
+                  bounds.width > 1, bounds.height > 1, Geometry.isCentered(bounds, in: display.bounds),
                   let layer = info[kCGWindowLayer as String] as? Int
             else { continue }
             let owner = info[kCGWindowOwnerPID as String] as? pid_t

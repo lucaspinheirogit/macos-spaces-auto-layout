@@ -15,7 +15,8 @@ public struct Placement {
     /// A "done" signal must hold this long before a step counts as finished.
     public var settleTime: Duration = .milliseconds(300)
     public var moveAttempts = 3
-    public var fullscreenBackoff: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2)]
+    /// Pause before each fullscreen retry; one more attempt than there are pauses.
+    public var fullscreenBackoff: [Duration] = [.milliseconds(500), .seconds(1)]
 
     public init() {}
 
@@ -28,8 +29,8 @@ public struct Placement {
         onStep: (StepResult) -> Void = { _ in }
     ) async -> [StepResult] {
         var steps: [StepResult] = []
-        func record(_ name: String, since start: ContinuousClock.Instant, ok: Bool, _ detail: String = "") -> Bool {
-            let step = StepResult(name: name, ok: ok, ms: (ContinuousClock.now - start).milliseconds, detail: detail)
+        func record(_ name: String, since start: ContinuousClock.Instant, ok: Bool, attempts: Int = 1, _ detail: String = "") -> Bool {
+            let step = StepResult(name: name, ok: ok, ms: (ContinuousClock.now - start).milliseconds, attempts: attempts, detail: detail)
             steps.append(step)
             onStep(step)
             return ok
@@ -100,7 +101,7 @@ public struct Placement {
             window.setFrame(target.visibleBounds)
             moved = await Wait.until(timeout: moveTimeout) { isOnTarget(window) }
         }
-        guard record("move", since: start, ok: moved, "attempts=\(attempts) frame=\(describe(window.frame))")
+        guard record("move", since: start, ok: moved, attempts: attempts, "frame=\(Geometry.describe(window.frame))")
         else { return steps }
 
         // 5a. Maximized: the frame should match the visible area. macOS clamps a size to what fits at the
@@ -117,20 +118,22 @@ public struct Placement {
                     window.frame.map { Geometry.approximatelyEqual($0, target.visibleBounds) } ?? false
                 }
             }
-            _ = record("verify-maximized", since: start, ok: filled, "attempts=\(attempts) frame=\(describe(window.frame))")
+            _ = record("verify-maximized", since: start, ok: filled, attempts: attempts, "frame=\(Geometry.describe(window.frame))")
             return steps
         }
 
-        // 5b. Fullscreen: bring it forward, then enter fullscreen, retrying with backoff.
+        // 5b. Fullscreen: bring it forward, then enter fullscreen, retrying with backoff. A retry brings the app
+        // forward again (another app's fullscreen Space can hide the signals) and only sets the attribute again
+        // if it didn't stick: setting true on a window that already reads true does nothing.
         start = .now
         var entered = false
         attempts = 0
-        while !entered && attempts < fullscreenBackoff.count {
+        while !entered && attempts <= fullscreenBackoff.count {
             if attempts > 0 { try? await Task.sleep(for: fullscreenBackoff[attempts - 1]) }
             attempts += 1
             app.activate()
             window.raise()
-            window.setFullScreen(true)
+            if window.isFullScreen != true { window.setFullScreen(true) }
             // The attribute flips at once; the fullscreen Space is really showing once the menu bar status items
             // and other apps' windows are gone from the target display, steadily.
             entered = await Wait.until(timeout: fullscreenTimeout, stableFor: settleTime) {
@@ -141,13 +144,8 @@ public struct Placement {
                 return screen.statusItems == 0 && screen.otherAppWindows == 0
             }
         }
-        _ = record("enter-fullscreen", since: start, ok: entered,
-                   "attempts=\(attempts) fullscreen=\(window.isFullScreen.map(String.init) ?? "?") frame=\(describe(window.frame))")
+        _ = record("enter-fullscreen", since: start, ok: entered, attempts: attempts,
+                   "fullscreen=\(window.isFullScreen.map(String.init) ?? "?") frame=\(Geometry.describe(window.frame))")
         return steps
-    }
-
-    private func describe(_ frame: CGRect?) -> String {
-        guard let f = frame else { return "?" }
-        return "\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
     }
 }

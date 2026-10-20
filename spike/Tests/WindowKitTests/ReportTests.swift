@@ -28,6 +28,14 @@ struct ReportTests {
             == PlacementReport.csvHeader.split(separator: ",").count)
     }
 
+    @Test func csvStepsListAttemptsOnlyWhenRetried() {
+        let r = report(steps: [
+            StepResult(name: "move", ok: true, ms: 3),
+            StepResult(name: "enter-fullscreen", ok: true, ms: 6424, attempts: 2),
+        ])
+        #expect(r.csvRow.hasSuffix(",move:3:1|enter-fullscreen:6424:1:2"))
+    }
+
     @Test func csvEscapesSpecialCharacters() {
         #expect(PlacementReport.csvEscape("plain") == "plain")
         #expect(PlacementReport.csvEscape("a,b") == "\"a,b\"")

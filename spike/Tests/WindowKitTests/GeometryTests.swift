@@ -47,4 +47,16 @@ struct GeometryTests {
         // On another display.
         #expect(!Geometry.fillsDisplay(CGRect(x: 1512, y: 0, width: 1512, height: 982), bounds: bounds))
     }
+
+    @Test func windowOverhangingFromNeighbourIsNotOnDisplay() {
+        let display = CGRect(x: 1000, y: 0, width: 1000, height: 800)
+        #expect(Geometry.isCentered(CGRect(x: 1200, y: 100, width: 400, height: 300), in: display))
+        // Mostly on the display to the left, 100 pt over the edge.
+        #expect(!Geometry.isCentered(CGRect(x: 500, y: 100, width: 600, height: 300), in: display))
+    }
+
+    @Test func describesFrames() {
+        #expect(Geometry.describe(CGRect(x: 0, y: 24.6, width: 1512, height: 957.4)) == "0,24 1512x957")
+        #expect(Geometry.describe(nil) == "?")
+    }
 }

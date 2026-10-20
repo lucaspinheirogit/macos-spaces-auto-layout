@@ -1,5 +1,3 @@
-import CoreGraphics
-
 public enum Wait {
     public static let pollInterval: Duration = .milliseconds(50)
 
@@ -42,7 +40,8 @@ public enum Wait {
 }
 
 extension Duration {
-    var milliseconds: Int {
+    /// Whole milliseconds, rounded down.
+    public var milliseconds: Int {
         let (seconds, attoseconds) = components
         return Int(seconds) * 1000 + Int(attoseconds / 1_000_000_000_000_000)
     }
