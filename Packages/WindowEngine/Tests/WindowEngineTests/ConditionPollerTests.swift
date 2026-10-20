@@ -4,21 +4,21 @@ import Testing
 
 @MainActor
 struct ConditionPollerTests {
-    @Test func returnsAsSoonAsConditionHolds() async {
-        #expect(await ConditionPoller.waitUntil(timeout: .seconds(1)) { true })
+    @Test func returnsAsSoonAsConditionHolds() async throws {
+        #expect(try await ConditionPoller.waitUntil(timeout: .seconds(1)) { true })
     }
 
-    @Test func timesOutWhenConditionNeverHolds() async {
+    @Test func timesOutWhenConditionNeverHolds() async throws {
         let start = ContinuousClock.now
-        #expect(!(await ConditionPoller.waitUntil(timeout: .milliseconds(120)) { false }))
+        #expect(!(try await ConditionPoller.waitUntil(timeout: .milliseconds(120)) { false }))
         #expect(ContinuousClock.now - start >= .milliseconds(120))
     }
 
-    @Test func stableForRestartsWhenConditionFlickers() async {
+    @Test func stableForRestartsWhenConditionFlickers() async throws {
         // true, false, then true from the third poll (~100 ms) on: the 200 ms must count from there.
         var polls = 0
         let start = ContinuousClock.now
-        let held = await ConditionPoller.waitUntil(timeout: .seconds(2), holdingFor: .milliseconds(200)) {
+        let held = try await ConditionPoller.waitUntil(timeout: .seconds(2), holdingFor: .milliseconds(200)) {
             polls += 1
             return polls != 2
         }
@@ -26,8 +26,8 @@ struct ConditionPollerTests {
         #expect(ContinuousClock.now - start >= .milliseconds(300))
     }
 
-    @Test func failsWhenConditionCannotHoldLongEnoughBeforeTimeout() async {
-        #expect(!(await ConditionPoller.waitUntil(timeout: .milliseconds(150), holdingFor: .seconds(1)) { true }))
+    @Test func failsWhenConditionCannotHoldLongEnoughBeforeTimeout() async throws {
+        #expect(!(try await ConditionPoller.waitUntil(timeout: .milliseconds(150), holdingFor: .seconds(1)) { true }))
     }
 
     @Test func wholeMillisecondsRoundsDown() {

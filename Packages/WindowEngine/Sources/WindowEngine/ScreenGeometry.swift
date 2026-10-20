@@ -38,9 +38,12 @@ public enum ScreenGeometry {
         bounds.contains(CGPoint(x: rect.midX, y: rect.midY))
     }
 
-    /// `x,y wxh` in whole points, or `?` for no frame.
+    /// `x,y wxh` in whole points, or `?` for no frame, a null rect or values that aren't finite.
     public static func debugFrameDescription(_ frame: CGRect?) -> String {
-        guard let f = frame else { return "?" }
+        guard let f = frame, !f.isNull else { return "?" }
+        let values = [f.minX, f.minY, f.width, f.height]
+        // Int(_:) traps on NaN, infinity and values beyond Int's range.
+        guard values.allSatisfy({ $0.isFinite && abs($0) < 1e15 }) else { return "?" }
         return "\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
     }
 

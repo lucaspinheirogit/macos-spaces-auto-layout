@@ -12,27 +12,31 @@ public enum AppLauncherError: Error, CustomStringConvertible {
 
 @MainActor
 public enum AppLauncher {
+    /// A running instance of the app. An instance that is quitting can still be listed for a moment, so it's skipped.
     public static func runningApplication(bundleId: String) -> NSRunningApplication? {
-        NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first
+        NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first { !$0.isTerminated }
     }
 
     /// Returns the running app, launching it in the background first if needed.
     public static func runningOrLaunch(_ bundleId: String) async throws -> NSRunningApplication {
         if let app = runningApplication(bundleId: bundleId) { return app }
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
-            throw AppLauncherError.notInstalled(bundleId)
-        }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false
-        return try await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
+        return try await NSWorkspace.shared.openApplication(at: url(of: bundleId), configuration: configuration)
     }
 
     /// Opens a running app again, like clicking its Dock icon. Most apps respond to this
-    /// "reopen" by creating a window when they have none.
-    public static func reopen(_ bundleId: String) async throws {
+    /// "reopen" by creating a window when they have none. With `activates` false the app stays in the background.
+    public static func reopen(_ bundleId: String, activates: Bool) async throws {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = activates
+        _ = try await NSWorkspace.shared.openApplication(at: url(of: bundleId), configuration: configuration)
+    }
+
+    private static func url(of bundleId: String) throws -> URL {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
             throw AppLauncherError.notInstalled(bundleId)
         }
-        _ = try await NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        return url
     }
 }

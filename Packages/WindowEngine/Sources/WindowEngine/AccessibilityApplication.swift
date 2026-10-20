@@ -4,14 +4,20 @@ import ApplicationServices
 /// Another app's Accessibility root element.
 @MainActor
 public struct AccessibilityApplication {
+    /// How long one Accessibility call may wait for the app to answer. The default is about 6 s, and every call
+    /// blocks the main actor, so a hung app would freeze the caller past every placement timeout.
+    static let messagingTimeoutSeconds: Float = 1
+
     public let runningApplication: NSRunningApplication
     let element: AXUIElement
 
     public init(_ runningApplication: NSRunningApplication) {
         self.runningApplication = runningApplication
         element = AXUIElementCreateApplication(runningApplication.processIdentifier)
+        _ = AXUIElementSetMessagingTimeout(element, Self.messagingTimeoutSeconds)
     }
 
+    /// The windows Accessibility can see. Usually only those on the current Space.
     public var windows: [AccessibilityWindow] {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXWindowsAttribute as CFString, &value) == .success,

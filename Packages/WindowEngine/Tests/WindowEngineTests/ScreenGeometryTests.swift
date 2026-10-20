@@ -68,4 +68,10 @@ struct ScreenGeometryTests {
             ScreenGeometry.debugFrameDescription(CGRect(x: 0, y: 24.6, width: 1512, height: 957.4)) == "0,24 1512x957")
         #expect(ScreenGeometry.debugFrameDescription(nil) == "?")
     }
+
+    @Test func describesUnusableFramesWithoutTrapping() {
+        #expect(ScreenGeometry.debugFrameDescription(.null) == "?")
+        #expect(ScreenGeometry.debugFrameDescription(.infinite) == "?")
+        #expect(ScreenGeometry.debugFrameDescription(CGRect(x: CGFloat.nan, y: 0, width: 10, height: 10)) == "?")
+    }
 }

@@ -2,17 +2,27 @@ import AppKit
 import ColorSync
 import CoreGraphics
 
+/// CoreGraphics couldn't list the active displays.
+public struct DisplayListError: Error, Equatable, Sendable, CustomStringConvertible {
+    public let code: CGError
+
+    public var description: String { "CGGetActiveDisplayList failed (CGError \(code.rawValue))" }
+}
+
 @MainActor
 public enum ConnectedDisplays {
-    /// Active displays, main display first, then left to right.
-    public static func current() -> [ConnectedDisplay] {
+    /// Active displays: the main display first, then left to right, then top to bottom.
+    public static func current() throws(DisplayListError) -> [ConnectedDisplay] {
         var count: UInt32 = 0
-        CGGetActiveDisplayList(0, nil, &count)
+        var error = CGGetActiveDisplayList(0, nil, &count)
+        guard error == .success else { throw DisplayListError(code: error) }
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        CGGetActiveDisplayList(count, &ids, &count)
+        error = CGGetActiveDisplayList(count, &ids, &count)
+        guard error == .success else { throw DisplayListError(code: error) }
 
         let screens = NSScreen.screens
-        let primaryHeight = screens.first?.frame.height ?? 0
+        // The main display has the menu bar and the origin of the global coordinate space.
+        let primaryHeight = CGDisplayBounds(CGMainDisplayID()).height
         func screen(for id: CGDirectDisplayID) -> NSScreen? {
             screens.first {
                 ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == id
@@ -21,7 +31,9 @@ public enum ConnectedDisplays {
 
         let sorted = ids.prefix(Int(count)).sorted { a, b in
             if CGDisplayIsMain(a) != CGDisplayIsMain(b) { return CGDisplayIsMain(a) != 0 }
-            return CGDisplayBounds(a).minX < CGDisplayBounds(b).minX
+            let boundsA = CGDisplayBounds(a)
+            let boundsB = CGDisplayBounds(b)
+            return (boundsA.minX, boundsA.minY, a) < (boundsB.minX, boundsB.minY, b)
         }
         return sorted.enumerated().map { index, id in
             let bounds = CGDisplayBounds(id)

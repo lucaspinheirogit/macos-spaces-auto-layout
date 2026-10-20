@@ -71,8 +71,19 @@ func printStep(_ step: PlacementStepResult) {
 
 // MARK: - Commands
 
+func connectedDisplays() -> [ConnectedDisplay] {
+    let displays: [ConnectedDisplay]
+    do {
+        displays = try ConnectedDisplays.current()
+    } catch {
+        fail("\(error)")
+    }
+    guard !displays.isEmpty else { fail("No active displays.") }
+    return displays
+}
+
 func listDisplays() {
-    let displays = ConnectedDisplays.current()
+    let displays = connectedDisplays()
     for d in displays {
         let flags = [d.isMain ? "main" : nil, d.isBuiltin ? "built-in" : nil].compactMap { $0 }.joined(separator: ", ")
         print("[\(d.index)] \(d.name) (\(flags))")
@@ -89,28 +100,30 @@ func listDisplays() {
 func listWindows(_ bundleId: String) {
     requireAccessibility()
     guard let app = AppLauncher.runningApplication(bundleId: bundleId) else { fail("\(bundleId) is not running") }
-    let displays = ConnectedDisplays.current()
+    let displays = connectedDisplays()
     let windows = AccessibilityApplication(app).windows
     if windows.isEmpty { print("No windows visible to Accessibility (windows on other Spaces may be hidden).") }
     for (i, w) in windows.enumerated() {
+        let frame = try? w.frame
         let display =
-            w.frame.flatMap { ConnectedDisplays.display(containing: $0, in: displays) }.map { "[\($0.index)]" } ?? "?"
+            frame.flatMap { ConnectedDisplays.display(containing: $0, in: displays) }.map { "[\($0.index)]" } ?? "?"
+        let fullscreen = (try? w.isFullScreen).map(String.init) ?? "?"
         print(
-            "#\(i) \"\(w.title ?? "")\" \(w.subrole ?? "?") frame=\(ScreenGeometry.debugFrameDescription(w.frame)) fullscreen=\(w.isFullScreen.map(String.init) ?? "?") display=\(display)"
+            "#\(i) \"\(w.title ?? "")\" \(w.subrole ?? "?") frame=\(ScreenGeometry.debugFrameDescription(frame)) fullscreen=\(fullscreen) display=\(display)"
         )
     }
 }
 
 func displayIndex(of window: AccessibilityWindow?, in displays: [ConnectedDisplay]) -> Int? {
-    window?.frame.flatMap { ConnectedDisplays.display(containing: $0, in: displays)?.index }
+    (try? window?.frame).flatMap { ConnectedDisplays.display(containing: $0, in: displays)?.index }
 }
 
-func place(_ bundleId: String, displayIndex: Int, mode: WindowPlacementMode) async {
+func place(_ bundleId: String, displayIndex: Int, mode: WindowPlacementMode) async throws {
     requireAccessibility()
-    let displays = ConnectedDisplays.current()
+    let displays = connectedDisplays()
     guard displays.indices.contains(displayIndex) else { fail("No display \(displayIndex). Run `displays`.") }
     print("\(bundleId) → [\(displayIndex)] \(displays[displayIndex].name), \(mode.rawValue)")
-    let steps = await WindowPlacer().placeStandardWindow(
+    let steps = try await WindowPlacer().placeStandardWindow(
         ofBundleId: bundleId, onDisplay: displays[displayIndex], among: displays, mode: mode, onStep: printStep)
     let report = PlacementReport(
         app: bundleId, run: 1, scenario: "manual", fromDisplay: nil,
@@ -119,36 +132,40 @@ func place(_ bundleId: String, displayIndex: Int, mode: WindowPlacementMode) asy
 }
 
 /// Toggles fullscreen once and samples what's observable every 50 ms, to see when the transition really ends.
-func trace(_ bundleId: String, useButton: Bool) async {
+func trace(_ bundleId: String, useButton: Bool) async throws {
     requireAccessibility()
     guard let app = AppLauncher.runningApplication(bundleId: bundleId),
         let window = AccessibilityApplication(app).mainOrFirstStandardWindow
     else {
         fail("\(bundleId) has no standard window")
     }
-    let displays = ConnectedDisplays.current()
-    guard let display = window.frame.flatMap({ ConnectedDisplays.display(containing: $0, in: displays) }) else {
+    let displays = connectedDisplays()
+    guard let display = (try? window.frame).flatMap({ ConnectedDisplays.display(containing: $0, in: displays) })
+    else {
         fail("window is off-screen")
     }
-    let target = !(window.isFullScreen ?? false)
+    let target = !((try? window.isFullScreen) ?? false)
     print(
         "\(useButton ? "Pressing the fullscreen button" : "Setting AXFullScreen=\(target)") on \"\(window.title ?? "")\""
     )
     print("    ms  attr   status others  frame")
-    app.activate()
-    window.raise()
+    if !app.activate() { print("activate() failed") }
+    try? window.raise()
     let start = ContinuousClock.now
-    let error = useButton ? window.pressFullScreenButton() : window.setFullScreen(target)
-    if error != .success { print("AXError \(error.rawValue)") }
+    do {
+        if useButton { try window.pressFullScreenButton() } else { try window.setFullScreen(target) }
+    } catch {
+        print(error)
+    }
     while ContinuousClock.now - start < .milliseconds(2500) {
         let ms = (ContinuousClock.now - start).wholeMilliseconds
-        let attr = window.isFullScreen.map(String.init) ?? "?"
+        let attr = (try? window.isFullScreen).map(String.init) ?? "?"
         let screen = FullscreenSpaceSignals.onScreenWindowCounts(on: display, excludingPID: app.processIdentifier)
         print(
             String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
             String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows),
-            ScreenGeometry.debugFrameDescription(window.frame))
-        try? await Task.sleep(for: .milliseconds(50))
+            ScreenGeometry.debugFrameDescription(try? window.frame))
+        try await Task.sleep(for: .milliseconds(50))
     }
 }
 
@@ -159,23 +176,25 @@ struct InitialState {
     let frame: CGRect?
 }
 
-func restore(_ bundleId: String, to state: InitialState, displays: [ConnectedDisplay]) async {
+func restore(_ bundleId: String, to state: InitialState, displays: [ConnectedDisplay]) async throws {
+    guard !displays.isEmpty else { return }
     let placer = WindowPlacer()
     let target = displays[min(state.displayIndex, displays.count - 1)]
     if state.fullscreen {
-        _ = await placer.placeStandardWindow(
+        _ = try await placer.placeStandardWindow(
             ofBundleId: bundleId, onDisplay: target, among: displays, mode: .fullscreen)
         return
     }
-    _ = await placer.placeStandardWindow(ofBundleId: bundleId, onDisplay: target, among: displays, mode: .maximized)
+    _ = try await placer.placeStandardWindow(
+        ofBundleId: bundleId, onDisplay: target, among: displays, mode: .maximized)
     if let frame = state.frame, let app = AppLauncher.runningApplication(bundleId: bundleId) {
-        AccessibilityApplication(app).mainOrFirstStandardWindow?.setFrame(frame)
+        try? AccessibilityApplication(app).mainOrFirstStandardWindow?.setFrame(frame)
     }
 }
 
-func bench(_ bundleIds: [String], runs: Int) async {
+func bench(_ bundleIds: [String], runs: Int) async throws {
     requireAccessibility()
-    let displays = ConnectedDisplays.current()
+    let displays = connectedDisplays()
     let multiDisplay = displays.count > 1
     let placer = WindowPlacer()
     var reports: [PlacementReport] = []
@@ -199,18 +218,18 @@ func bench(_ bundleIds: [String], runs: Int) async {
             } : nil
         let initial = before.map { window in
             InitialState(
-                fullscreen: window.isFullScreen ?? false,
+                fullscreen: (try? window.isFullScreen) ?? false,
                 displayIndex: displayIndex(of: window, in: displays) ?? 0,
-                frame: window.frame
+                frame: try? window.frame
             )
         }
         let baselineMode: WindowPlacementMode = multiDisplay ? .fullscreen : .maximized
-        let baseline = await placer.placeStandardWindow(
+        let baseline = try await placer.placeStandardWindow(
             ofBundleId: bundleId, onDisplay: displays[0], among: displays, mode: baselineMode)
         if !baseline.allSatisfy(\.succeeded) { print("  ! baseline placement failed; continuing anyway") }
 
         for run in 1...runs {
-            try? await Task.sleep(for: pauseBetweenRuns)
+            try await Task.sleep(for: pauseBetweenRuns)
             let window = AppLauncher.runningApplication(bundleId: bundleId).flatMap {
                 AccessibilityApplication($0).mainOrFirstStandardWindow
             }
@@ -227,7 +246,7 @@ func bench(_ bundleIds: [String], runs: Int) async {
                 to = 0
                 scenario = mode == .fullscreen ? "normal-to-fullscreen" : "fullscreen-to-maximized"
             }
-            let steps = await placer.placeStandardWindow(
+            let steps = try await placer.placeStandardWindow(
                 ofBundleId: bundleId, onDisplay: displays[to], among: displays, mode: mode)
             let report = PlacementReport(
                 app: bundleId, run: run, scenario: scenario, fromDisplay: from,
@@ -238,12 +257,12 @@ func bench(_ bundleIds: [String], runs: Int) async {
             print("  #\(run) \(scenario) \(report.totalMilliseconds) ms \(outcome)")
         }
 
-        try? await Task.sleep(for: pauseBetweenRuns)
+        try await Task.sleep(for: pauseBetweenRuns)
         if let initial {
-            await restore(bundleId, to: initial, displays: displays)
+            try await restore(bundleId, to: initial, displays: displays)
         } else if wasRunning {
             // It had no window before; close the one the bench made it open.
-            AppLauncher.runningApplication(bundleId: bundleId).flatMap {
+            try? AppLauncher.runningApplication(bundleId: bundleId).flatMap {
                 AccessibilityApplication($0).mainOrFirstStandardWindow
             }?.close()
         } else {
@@ -280,8 +299,7 @@ func printSummary(_ reports: [PlacementReport]) {
         let rate = String(format: "%d/%d (%.0f%%)", s.successes, s.runs, s.successRate * 100)
         let failures = s.failuresByStep.sorted { $0.key.rawValue < $1.key.rawValue }.map {
             "\($0.key.rawValue)×\($0.value)"
-        }.joined(
-            separator: ", ")
+        }.joined(separator: ", ")
         print(
             "\(s.app) | \(s.scenario) | \(rate) | \(s.p50Milliseconds.map(String.init) ?? "-") | \(s.p95Milliseconds.map(String.init) ?? "-") | \(failures.isEmpty ? "-" : failures)"
         )
@@ -293,7 +311,7 @@ func printSummary(_ reports: [PlacementReport]) {
 /// Runs the command, then exits. Window-server state (the on-screen window list, Accessibility notifications)
 /// only stays current while AppKit's event loop runs, so the command runs inside a normal NSApplication loop,
 /// like the real app will.
-func run() async {
+func run() async throws {
     guard let command = arguments.first else { fail(usage) }
     arguments.removeFirst()
 
@@ -307,16 +325,16 @@ func run() async {
         let useButton = arguments.contains("--button")
         arguments.removeAll { $0 == "--button" }
         guard let bundleId = arguments.first else { fail(usage) }
-        await trace(bundleId, useButton: useButton)
+        try await trace(bundleId, useButton: useButton)
     case "place":
         let displayIndex = intOption("--display", default: 0)
         guard let mode = WindowPlacementMode(rawValue: option("--mode") ?? "fullscreen") else { fail(usage) }
         guard let bundleId = arguments.first else { fail(usage) }
-        await place(bundleId, displayIndex: displayIndex, mode: mode)
+        try await place(bundleId, displayIndex: displayIndex, mode: mode)
     case "bench":
         let runs = intOption("--runs", default: 20)
         guard runs > 0 else { fail("--runs must be at least 1") }
-        await bench(arguments.isEmpty ? testApps : arguments, runs: runs)
+        try await bench(arguments.isEmpty ? testApps : arguments, runs: runs)
     default:
         fail(usage)
     }
@@ -325,7 +343,11 @@ func run() async {
 let application = NSApplication.shared
 application.setActivationPolicy(.prohibited)  // no Dock icon or menu bar
 Task {
-    await run()
+    do {
+        try await run()
+    } catch {
+        fail("\(error)")
+    }
     exit(0)
 }
 application.run()

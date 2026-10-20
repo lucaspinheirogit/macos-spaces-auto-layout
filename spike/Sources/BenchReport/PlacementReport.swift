@@ -43,8 +43,9 @@ public struct PlacementReport: Sendable, Equatable {
         ].map(Self.csvEscape).joined(separator: ",")
     }
 
+    /// Quotes a field that holds a comma, a quote or a line break (`\n`, `\r` or both).
     static func csvEscape(_ field: String) -> String {
-        guard field.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" }) else { return field }
+        guard field.contains(where: { $0 == "," || $0 == "\"" || $0.isNewline }) else { return field }
         return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 }

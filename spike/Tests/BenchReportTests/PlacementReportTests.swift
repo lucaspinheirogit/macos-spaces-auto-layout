@@ -47,7 +47,8 @@ struct PlacementReportTests {
     @Test func stepNamesMatchTheExistingCSVFiles() {
         #expect(
             PlacementStep.allCases.map(\.rawValue) == [
-                "app", "already-done", "exit-fullscreen", "move", "verify-maximized", "enter-fullscreen",
+                "target-display", "app", "unminimize", "already-done", "exit-fullscreen", "move", "verify-maximized",
+                "enter-fullscreen",
             ])
     }
 
@@ -55,5 +56,8 @@ struct PlacementReportTests {
         #expect(PlacementReport.csvEscape("plain") == "plain")
         #expect(PlacementReport.csvEscape("a,b") == "\"a,b\"")
         #expect(PlacementReport.csvEscape("say \"hi\"") == "\"say \"\"hi\"\"\"")
+        #expect(PlacementReport.csvEscape("a\rb") == "\"a\rb\"")
+        #expect(PlacementReport.csvEscape("a\nb") == "\"a\nb\"")
+        #expect(PlacementReport.csvEscape("a\r\nb") == "\"a\r\nb\"")
     }
 }
