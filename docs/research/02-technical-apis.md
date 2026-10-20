@@ -53,7 +53,7 @@ This document covers the APIs the app would need: for each one, what it does, wh
 - `NSWorkspace.shared.urlForApplication(withBundleIdentifier:)` + `openApplication(at:configuration:)`. Use `OpenConfiguration.activates = false` to avoid stealing focus while applying a layout.
 - `NSWorkspace.shared.runningApplications` / `NSRunningApplication.runningApplications(withBundleIdentifier:)` to get the PID for the Accessibility API.
 - `NSWorkspace.didLaunchApplicationNotification` tells you when an app has launched. Its windows usually appear **later**, so wait for the `kAXWindowCreatedNotification` Accessibility observer, or poll.
-- **Store the bundle ID, not the display name.** The current codebase loses it (see [04](04-current-codebase-assessment.md)).
+- **Store the bundle ID, not the display name.** It's the only stable key for finding and launching an app.
 
 ## 4. Accessibility API (AXUIElement): moving, resizing, fullscreen
 

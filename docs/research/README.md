@@ -26,9 +26,9 @@ The main risks are:
 
 ## Recommendation
 
-Rewrite the window engine **as a native Swift app** (Accessibility + CoreGraphics + NSWorkspace) and drop the Hammerspoon bridge.
+Build the window engine **in native Swift** (Accessibility + CoreGraphics + NSWorkspace) inside the app, with no Hammerspoon dependency.
 
-- Keep the SwiftUI screens that already exist.
+- Build on the existing SwiftUI setup editor (see [architecture](../architecture.md)).
 - Offer **Maximized** (fill the screen) as the reliable default placement mode.
 - Offer **Native Fullscreen** as an opt-in mode that tries its best and verifies each step.
 - **Start with a 1–2 day spike** that tests whether moving a window and then fullscreening it works reliably on two displays, before building anything else.
@@ -40,8 +40,7 @@ Rewrite the window engine **as a native Swift app** (Accessibility + CoreGraphic
 | 01 | [macOS native capabilities](01-macos-native-capabilities.md) | What macOS already offers (Spaces, Assign To Desktop, tiling, Stage Manager, Shortcuts) and why it isn't enough |
 | 02 | [Technical APIs](02-technical-apis.md) | Public APIs (CoreGraphics, NSScreen, Accessibility, NSWorkspace), private Spaces APIs and how often they break, permissions and distribution, identifying displays |
 | 03 | [Existing tools](03-existing-tools.md) | Survey of 17+ tools (Moom, Rectangle Pro, Stay, Hammerspoon, yabai, AeroSpace…), a comparison table, and known pain points |
-| 04 | [Current codebase assessment](04-current-codebase-assessment.md) | What the repo and the `~/.hammerspoon` scripts do, what's broken, and the gap to the goal |
-| 05 | [Recommended architecture](05-recommended-architecture.md) | Data model, apply algorithm, risks, phased roadmap, open questions |
+| 04 | [Recommended architecture](04-recommended-architecture.md) | Data model, apply algorithm, risks, phased roadmap, open questions |
 
 ## Feasibility at a glance
 

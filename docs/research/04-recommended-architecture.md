@@ -1,11 +1,11 @@
-# 05: Recommended Architecture and Roadmap
+# 04: Recommended Architecture and Roadmap
 
 ## Decision summary
 
 | Question | Decision | Why |
 |---|---|---|
 | Native macOS feature? | None exists | [01](01-macos-native-capabilities.md) |
-| Hammerspoon as engine? | **No.** Use it for prototyping only | Extra install, AppleScript bridge, experimental layout module, can't be shipped to other users ([03](03-existing-tools.md), [04](04-current-codebase-assessment.md)) |
+| Hammerspoon as engine? | **No.** Use it for prototyping only | Extra install, AppleScript bridge, experimental layout module, can't be shipped to other users ([03](03-existing-tools.md)) |
 | yabai / private Spaces APIs? | **No** | Break nearly every macOS release; some need SIP disabled ([02 §5](02-technical-apis.md#5-spaces-desktops-private-apis-only)) |
 | Engine tech | **Native Swift**: Accessibility API (AXUIElement), CoreGraphics (CGDisplay), NSWorkspace | All public and stable. One app, one permission |
 | Placement modes | **Maximized** (default, reliable) + **Native fullscreen** (opt-in, best-effort with checks) | Fullscreen per display has no direct API ([02 §4](02-technical-apis.md#4-accessibility-api-axuielement-moving-resizing-fullscreen)) |
@@ -37,6 +37,8 @@
 
 ## Data model (Codable)
 
+This extends the model the app already has (see [architecture](../architecture.md)) with display identity and per-app placement options.
+
 ```swift
 struct DisplayFingerprint: Codable, Hashable {
     var uuid: String            // CGDisplayCreateUUIDFromDisplayID
@@ -67,7 +69,7 @@ struct Setup: Codable, Identifiable {
 }
 ```
 
-UI change: the editor gets a **"Capture current displays"** button instead of free-form "Monitor N". Each column shows the real display name and its position (left, main, right).
+UI change: the editor gets a **"Capture current displays"** button instead of the generic "Display N" columns. Each column shows the real display name and its position (left, main, right).
 
 ## Apply algorithm
 
@@ -95,8 +97,8 @@ engine.apply(setup):                   // one job at a time, cancel previous run
   report per-app result (✓ / ⚠︎ reason) in menu bar
 ```
 
-Key differences from the current Hammerspoon engine:
-- **A step whose check fails stops that app's job and reports it** instead of carrying on (fixes issue D12 in [04](04-current-codebase-assessment.md)).
+Key design rules (where Hammerspoon-style scripts with fixed delays fall short):
+- **A step whose check fails stops that app's job and reports it** instead of carrying on.
 - Waits on Accessibility notifications, with polling as a fallback, instead of fixed delays.
 - Fullscreen transitions run strictly one at a time.
 - Apps that aren't running get launched.
@@ -128,10 +130,9 @@ Key differences from the current Hammerspoon engine:
 - `DisplayMonitor`, `DisplayFingerprint`, `SetupMatcher`, `LayoutEngine` (Maximized + Fullscreen state machine), Accessibility permission onboarding.
 - Menu-bar extra with "Apply now".
 
-**Phase 2: UI rewire**
-- Replace `HammerspoonManager` and the Lua files with a JSON `SetupStore`.
-- Editor: capture displays, set the mode for each app, add, remove and reorder.
-- Replace the "active" toggle with "auto-apply".
+**Phase 2: Editor features**
+- Capture displays, set the mode for each app, add, remove and reorder.
+- Add an "auto-apply" switch per setup.
 
 **Phase 3: Polish**
 - Launch at login (`SMAppService`).
@@ -149,4 +150,3 @@ Key differences from the current Hammerspoon engine:
 2. Should the app **launch** missing apps, or only arrange apps that are already open?
 3. Should setups apply **automatically** on display change, or ask first ("Switch to Home desk?")?
 4. Apps with several windows (e.g. two browser windows on different screens): needed in v1?
-5. Keep the deployment target at macOS 26, or move to 27? Lowering it to 15 would reach more users; the APIs used are available there.
