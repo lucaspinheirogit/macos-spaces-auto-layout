@@ -5,14 +5,21 @@ struct DeskSetupRowView: View {
     let store: DeskSetupStore
     @State private var isEditorPresented = false
 
+    private enum Layout {
+        static let iconTileSize: CGFloat = 40
+        static let iconTileCornerRadius: CGFloat = 8
+        static let iconTileOpacity = 0.15
+        static let iconPointSize: CGFloat = 18
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemGray).opacity(0.15))
-                    .frame(width: 40, height: 40)
+                RoundedRectangle(cornerRadius: Layout.iconTileCornerRadius)
+                    .fill(Color(.systemGray).opacity(Layout.iconTileOpacity))
+                    .frame(width: Layout.iconTileSize, height: Layout.iconTileSize)
                 Image(systemName: setup.displayCountSymbolName)
-                    .font(.system(size: 18))
+                    .font(.system(size: Layout.iconPointSize))
                     .foregroundStyle(.primary)
             }
 
@@ -34,11 +41,7 @@ struct DeskSetupRowView: View {
             .controlSize(.small)
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
-        )
+        .cardStyle()
         .sheet(isPresented: $isEditorPresented) {
             DeskSetupEditorView(setup: setup, store: store)
         }

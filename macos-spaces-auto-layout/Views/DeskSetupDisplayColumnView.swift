@@ -1,10 +1,21 @@
-import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
+/// One display in the editor: its name, its apps, and an Add App button.
 struct DeskSetupDisplayColumnView: View {
-    @Binding var display: DeskSetupDisplay
+    let display: DeskSetupDisplay
     let isMain: Bool
+    /// Called by the Add App button. The editor owns the file picker.
+    let onAddApp: () -> Void
+
+    private enum Layout {
+        static let minWidth: CGFloat = 200
+        static let headerPadding: CGFloat = 12
+        /// Lines up the dividers between app rows with the app names, past the icons.
+        static let appDividerIndent: CGFloat = 36
+        static let addButtonIconSize: CGFloat = 12
+        static let addButtonBackgroundOpacity = 0.5
+        static let shadowRadius: CGFloat = 3
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -24,7 +35,7 @@ struct DeskSetupDisplayColumnView: View {
                         .tracking(0.5)
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, Layout.headerPadding)
             .padding(.vertical, 10)
 
             Divider()
@@ -34,20 +45,16 @@ struct DeskSetupDisplayColumnView: View {
                 ForEach(display.apps) { app in
                     AppPlacementRowView(app: app)
                     if app.id != display.apps.last?.id {
-                        Divider().padding(.leading, 36)
+                        Divider().padding(.leading, Layout.appDividerIndent)
                     }
                 }
             }
 
             // Add App button
-            Button {
-                pickApp { app in
-                    if let app { display.apps.append(app) }
-                }
-            } label: {
+            Button(action: onAddApp) {
                 HStack {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: Layout.addButtonIconSize, weight: .medium))
                     Text("Add App")
                         .font(.subheadline)
                 }
@@ -56,46 +63,9 @@ struct DeskSetupDisplayColumnView: View {
                 .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .background(Color(.windowBackgroundColor).opacity(0.5))
+            .background(Color(.windowBackgroundColor).opacity(Layout.addButtonBackgroundOpacity))
         }
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.windowBackgroundColor))
-                .shadow(color: .black.opacity(0.06), radius: 3, x: 0, y: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .frame(minWidth: 200)
-    }
-
-    private func pickApp(completion: @escaping (AppPlacement?) -> Void) {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [.applicationBundle]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.prompt = "Select"
-        panel.message = "Choose an application to add"
-
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else {
-                completion(nil)
-                return
-            }
-            guard let app = AppPlacement(appURL: url) else {
-                showMissingBundleIdAlert(for: url)
-                completion(nil)
-                return
-            }
-            completion(app)
-        }
-    }
-
-    private func showMissingBundleIdAlert(for url: URL) {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = "Can't add \(url.deletingPathExtension().lastPathComponent)"
-        alert.informativeText = "This app has no bundle identifier, so it can't be recognized later."
-        alert.runModal()
+        .cardStyle(shadowRadius: Layout.shadowRadius, clipsContent: true)
+        .frame(minWidth: Layout.minWidth)
     }
 }

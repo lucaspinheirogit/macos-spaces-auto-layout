@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 struct AppPlacementRowView: View {
     let app: AppPlacement
 
+    private static let iconSize: CGFloat = 20
+
     private var appIcon: NSImage {
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleId) {
             return NSWorkspace.shared.icon(forFile: url.path)
@@ -17,7 +19,7 @@ struct AppPlacementRowView: View {
             Image(nsImage: appIcon)
                 .resizable()
                 .interpolation(.high)
-                .frame(width: 20, height: 20)
+                .frame(width: Self.iconSize, height: Self.iconSize)
             Text(app.name)
                 .font(.subheadline)
             Spacer()

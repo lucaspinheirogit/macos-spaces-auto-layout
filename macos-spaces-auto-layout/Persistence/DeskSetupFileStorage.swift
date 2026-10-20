@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reads and writes setups as JSON at a fixed file URL.
+/// Reads and writes `setups.json` (a `DeskSetupFile`) at a fixed file URL.
 nonisolated struct DeskSetupFileStorage: Sendable {
     let fileURL: URL
 
@@ -14,24 +14,25 @@ nonisolated struct DeskSetupFileStorage: Sendable {
                 .appendingPathComponent("setups.json"))
     }
 
-    /// A throwaway file for SwiftUI previews, so they never touch the real data.
-    static var preview: DeskSetupFileStorage {
+    /// A throwaway file for SwiftUI previews and the test host, so they never touch the real data.
+    static var temporary: DeskSetupFileStorage {
         DeskSetupFileStorage(
             fileURL: FileManager.default.temporaryDirectory
-                .appendingPathComponent("setups-preview-\(UUID().uuidString).json"))
+                .appendingPathComponent("setups-temporary-\(UUID().uuidString).json"))
     }
 
     /// Returns nil when no file has been saved yet.
-    func load() throws -> [DeskSetup]? {
+    /// Throws `DecodingError` when the file's contents are unreadable, and any other error
+    /// (a directory at the path, no permission) when the file itself can't be read.
+    func load() throws -> DeskSetupFile? {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
         let data = try Data(contentsOf: fileURL)
-        return try JSONDecoder().decode([DeskSetup].self, from: data)
+        return try DeskSetupFile.decode(from: data)
     }
 
+    /// Writes the setups atomically as the current schema version.
     func save(_ setups: [DeskSetup]) throws {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let data = try encoder.encode(setups)
+        let data = try DeskSetupFile(setups: setups).encoded()
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -40,14 +41,19 @@ nonisolated struct DeskSetupFileStorage: Sendable {
     }
 
     /// Renames an unreadable file to `setups.corrupt-<timestamp>.json` so the next save can't overwrite it.
-    /// Returns the new location.
+    /// If that name is taken, adds `-2`, `-3`, … before the extension. Returns the new location.
     func moveAsideUnreadableFile(now: Date = .now) throws -> URL {
         let timestamp = now.ISO8601Format(
             .iso8601.year().month().day().dateSeparator(.dash)
                 .time(includingFractionalSeconds: false).timeSeparator(.omitted).timeZone(separator: .omitted))
         let name = fileURL.deletingPathExtension().lastPathComponent
-        let backupURL = fileURL.deletingLastPathComponent()
-            .appendingPathComponent("\(name).corrupt-\(timestamp).\(fileURL.pathExtension)")
+        let folder = fileURL.deletingLastPathComponent()
+        var backupURL = folder.appendingPathComponent("\(name).corrupt-\(timestamp).\(fileURL.pathExtension)")
+        var suffix = 2
+        while FileManager.default.fileExists(atPath: backupURL.path) {
+            backupURL = folder.appendingPathComponent("\(name).corrupt-\(timestamp)-\(suffix).\(fileURL.pathExtension)")
+            suffix += 1
+        }
         try FileManager.default.moveItem(at: fileURL, to: backupURL)
         return backupURL
     }
