@@ -26,4 +26,13 @@ public enum AppLauncher {
         configuration.activates = false
         return try await NSWorkspace.shared.openApplication(at: url, configuration: configuration)
     }
+
+    /// Opens a running app again, like clicking its Dock icon. Most apps respond to this
+    /// "reopen" by creating a window when they have none.
+    public static func reopen(_ bundleId: String) async throws {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
+            throw AppLauncherError.notInstalled(bundleId)
+        }
+        _ = try await NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
 }

@@ -4,9 +4,16 @@ import AppKit
 /// Stops at the first step whose check fails.
 @MainActor
 public struct Placement {
+    /// How long to wait for an existing window before reopening the app.
+    public var noWindowGrace: Duration = .seconds(2)
     public var windowTimeout: Duration = .seconds(10)
     public var fullscreenTimeout: Duration = .seconds(5)
     public var moveTimeout: Duration = .seconds(2)
+    public var maximizeTimeout: Duration = .milliseconds(500)
+    /// How long the desktop (menu bar status items) may take to come back after leaving fullscreen.
+    public var desktopTimeout: Duration = .seconds(2)
+    /// A "done" signal must hold this long before a step counts as finished.
+    public var settleTime: Duration = .milliseconds(300)
     public var moveAttempts = 3
     public var fullscreenBackoff: [Duration] = [.milliseconds(500), .seconds(1), .seconds(2)]
 
@@ -41,12 +48,22 @@ public struct Placement {
             return steps
         }
         var found: AXWindow?
-        _ = await Wait.until(timeout: windowTimeout) {
-            found = AXApp(app).standardWindow
-            return found != nil
+        func findWindow(timeout: Duration) async -> Bool {
+            await Wait.until(timeout: timeout) {
+                found = AXApp(app).standardWindow
+                return found != nil
+            }
         }
-        guard record("app", since: start, ok: found != nil, found == nil ? "no standard window" : found?.title ?? ""),
-              let window = found
+        // Apps launched in the background, or with all windows closed, often have no window:
+        // reopen them (like a Dock click) so they create one.
+        var reopened = false
+        if !(await findWindow(timeout: noWindowGrace)) {
+            reopened = true
+            try? await AppLauncher.reopen(bundleId)
+            _ = await findWindow(timeout: windowTimeout)
+        }
+        let appDetail = found == nil ? "no standard window" : "\(reopened ? "reopened; " : "")\(found?.title ?? "")"
+        guard record("app", since: start, ok: found != nil, appDetail), let window = found
         else { return steps }
 
         // 2. Nothing to do if it's already fullscreen on the target.
@@ -58,11 +75,19 @@ public struct Placement {
         // 3. Leave fullscreen first: a fullscreen window can't be moved.
         if window.isFullScreen == true {
             start = .now
+            let source = window.frame.flatMap { Displays.display(for: $0, in: displays) } ?? target
             let error = window.setFullScreen(false)
             let exited = await Wait.until(timeout: fullscreenTimeout) { window.isFullScreen == false }
-            let settled = exited ? await Wait.forStableFrame(window, timeout: fullscreenTimeout) : false
-            guard record("exit-fullscreen", since: start, ok: exited && settled,
-                         exited ? (settled ? "" : "frame still changing") : "still fullscreen (AXError \(error.rawValue))")
+            // The attribute flips at once; the desktop is back when the menu bar status items reappear.
+            // With an always-hidden menu bar they never do, so fall back to the frame settling.
+            let desktopBack = exited ? await Wait.until(timeout: desktopTimeout, stableFor: settleTime) {
+                Displays.onScreen(on: source, excludingPID: app.processIdentifier).statusItems > 0
+            } : false
+            let settled = exited ? await Wait.forStableFrame(window, stableFor: settleTime, timeout: fullscreenTimeout) : false
+            let exitDetail = !exited ? "still fullscreen (AXError \(error.rawValue))"
+                : !settled ? "frame still changing"
+                : desktopBack ? "" : "status items never reappeared (menu bar hidden?)"
+            guard record("exit-fullscreen", since: start, ok: exited && settled, exitDetail)
             else { return steps }
         }
 
@@ -78,13 +103,21 @@ public struct Placement {
         guard record("move", since: start, ok: moved, "attempts=\(attempts) frame=\(describe(window.frame))")
         else { return steps }
 
-        // 5a. Maximized: the frame should match the visible area.
+        // 5a. Maximized: the frame should match the visible area. macOS clamps a size to what fits at the
+        // window's position *at that moment*; if the app applied the move late, the size got clamped, so
+        // set the frame again.
         if mode == .maximized {
             start = .now
-            let filled = await Wait.until(timeout: moveTimeout) {
-                window.frame.map { Geometry.approximatelyEqual($0, target.visibleBounds) } ?? false
+            var filled = false
+            attempts = 0
+            while !filled && attempts < moveAttempts {
+                if attempts > 0 { window.setFrame(target.visibleBounds) }
+                attempts += 1
+                filled = await Wait.until(timeout: maximizeTimeout) {
+                    window.frame.map { Geometry.approximatelyEqual($0, target.visibleBounds) } ?? false
+                }
             }
-            _ = record("verify-maximized", since: start, ok: filled, "frame=\(describe(window.frame))")
+            _ = record("verify-maximized", since: start, ok: filled, "attempts=\(attempts) frame=\(describe(window.frame))")
             return steps
         }
 
@@ -98,9 +131,14 @@ public struct Placement {
             app.activate()
             window.raise()
             window.setFullScreen(true)
-            entered = await Wait.until(timeout: fullscreenTimeout) {
-                window.isFullScreen == true && isOnTarget(window)
-                    && (window.frame.map { Geometry.fillsDisplay($0, bounds: target.bounds) } ?? false)
+            // The attribute flips at once; the fullscreen Space is really showing once the menu bar status items
+            // and other apps' windows are gone from the target display, steadily.
+            entered = await Wait.until(timeout: fullscreenTimeout, stableFor: settleTime) {
+                guard window.isFullScreen == true, isOnTarget(window),
+                      window.frame.map({ Geometry.fillsDisplay($0, bounds: target.bounds) }) ?? false
+                else { return false }
+                let screen = Displays.onScreen(on: target, excludingPID: app.processIdentifier)
+                return screen.statusItems == 0 && screen.otherAppWindows == 0
             }
         }
         _ = record("enter-fullscreen", since: start, ok: entered,

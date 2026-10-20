@@ -3,12 +3,19 @@ import CoreGraphics
 public enum Wait {
     public static let pollInterval: Duration = .milliseconds(50)
 
-    /// Checks `condition` every 50 ms until it's true or `timeout` passes.
+    /// Checks `condition` every 50 ms until it has been true for `stableFor` (default: once) or `timeout` passes.
     @MainActor
-    public static func until(timeout: Duration, _ condition: () -> Bool) async -> Bool {
+    public static func until(timeout: Duration, stableFor: Duration = .zero, _ condition: () -> Bool) async -> Bool {
         let deadline = ContinuousClock.now + timeout
+        var trueSince: ContinuousClock.Instant?
         while true {
-            if condition() { return true }
+            if condition() {
+                let since = trueSince ?? .now
+                trueSince = since
+                if ContinuousClock.now - since >= stableFor { return true }
+            } else {
+                trueSince = nil
+            }
             if ContinuousClock.now >= deadline { return false }
             try? await Task.sleep(for: pollInterval)
         }

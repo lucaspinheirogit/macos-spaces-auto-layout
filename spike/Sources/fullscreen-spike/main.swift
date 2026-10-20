@@ -99,6 +99,32 @@ func place(_ bundleId: String, displayIndex: Int, mode: PlacementMode) async {
     print(report.success ? "OK in \(report.totalMs) ms" : "FAILED at \(report.failedStep ?? "?")")
 }
 
+/// Toggles fullscreen once and samples what's observable every 50 ms, to see when the transition really ends.
+func trace(_ bundleId: String) async {
+    requireAccessibility()
+    guard let app = AppLauncher.running(bundleId), let window = AXApp(app).standardWindow else {
+        fail("\(bundleId) has no standard window")
+    }
+    let displays = Displays.current()
+    guard let display = window.frame.flatMap({ Displays.display(for: $0, in: displays) }) else { fail("window is off-screen") }
+    let target = !(window.isFullScreen ?? false)
+    print("Setting AXFullScreen=\(target) on \"\(window.title ?? "")\"")
+    print("    ms  attr   status others  frame")
+    app.activate()
+    window.raise()
+    let start = ContinuousClock.now
+    window.setFullScreen(target)
+    while ContinuousClock.now - start < .milliseconds(2500) {
+        let ms = (ContinuousClock.now - start).components.attoseconds / 1_000_000_000_000_000
+            + (ContinuousClock.now - start).components.seconds * 1000
+        let attr = window.isFullScreen.map(String.init) ?? "?"
+        let screen = Displays.onScreen(on: display, excludingPID: app.processIdentifier)
+        print(String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
+              String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows), describe(window.frame))
+        try? await Task.sleep(for: .milliseconds(50))
+    }
+}
+
 /// What an app looked like before the bench, so it can be put back afterwards.
 struct InitialState {
     let fullscreen: Bool
@@ -211,24 +237,40 @@ func printSummary(_ reports: [PlacementReport]) {
 
 // MARK: - Main
 
-guard let command = arguments.first else { fail(usage) }
-arguments.removeFirst()
+/// Runs the command, then exits. Window-server state (the on-screen window list, Accessibility notifications)
+/// only stays current while AppKit's event loop runs, so the command runs inside a normal NSApplication loop,
+/// like the real app will.
+func run() async {
+    guard let command = arguments.first else { fail(usage) }
+    arguments.removeFirst()
 
-switch command {
-case "displays":
-    listDisplays()
-case "windows":
-    guard let bundleId = arguments.first else { fail(usage) }
-    listWindows(bundleId)
-case "place":
-    let displayIndex = option("--display").flatMap(Int.init) ?? 0
-    guard let mode = PlacementMode(rawValue: option("--mode") ?? "fullscreen") else { fail(usage) }
-    guard let bundleId = arguments.first else { fail(usage) }
-    await place(bundleId, displayIndex: displayIndex, mode: mode)
-case "bench":
-    let runs = option("--runs").flatMap(Int.init) ?? 20
-    guard runs > 0 else { fail("--runs must be at least 1") }
-    await bench(arguments.isEmpty ? testApps : arguments, runs: runs)
-default:
-    fail(usage)
+    switch command {
+    case "displays":
+        listDisplays()
+    case "windows":
+        guard let bundleId = arguments.first else { fail(usage) }
+        listWindows(bundleId)
+    case "trace":
+        guard let bundleId = arguments.first else { fail(usage) }
+        await trace(bundleId)
+    case "place":
+        let displayIndex = option("--display").flatMap(Int.init) ?? 0
+        guard let mode = PlacementMode(rawValue: option("--mode") ?? "fullscreen") else { fail(usage) }
+        guard let bundleId = arguments.first else { fail(usage) }
+        await place(bundleId, displayIndex: displayIndex, mode: mode)
+    case "bench":
+        let runs = option("--runs").flatMap(Int.init) ?? 20
+        guard runs > 0 else { fail("--runs must be at least 1") }
+        await bench(arguments.isEmpty ? testApps : arguments, runs: runs)
+    default:
+        fail(usage)
+    }
 }
+
+let application = NSApplication.shared
+application.setActivationPolicy(.prohibited)   // no Dock icon or menu bar
+Task {
+    await run()
+    exit(0)
+}
+application.run()

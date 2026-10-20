@@ -16,6 +16,7 @@ Run from this folder:
 ```sh
 swift run fullscreen-spike displays
 swift run fullscreen-spike windows com.apple.Safari
+swift run fullscreen-spike trace com.apple.Safari
 swift run fullscreen-spike place com.apple.Safari --display 0 --mode fullscreen
 swift run fullscreen-spike place com.apple.Safari --display 0 --mode maximized
 swift run fullscreen-spike bench --runs 20
@@ -26,6 +27,7 @@ swift run fullscreen-spike bench com.apple.Safari com.apple.dt.Xcode --runs 10
 |---|---|
 | `displays` | Lists displays (index, name, UUID, main / built-in, bounds, visible area) and whether "Displays have separate Spaces" is on |
 | `windows <bundleId>` | Lists the app's windows: title, subrole, frame, fullscreen, which display |
+| `trace <bundleId>` | Toggles fullscreen once and prints the `AXFullScreen` attribute, the frame and the on-screen signals every 50 ms for 2.5 s |
 | `place <bundleId> [--display N] [--mode fullscreen\|maximized]` | Places the app's window once and prints each step with its timing |
 | `bench [bundleId…] [--runs N]` | Repeats placements for each app (default: the 7 test apps, 20 runs), writes `results/bench-<timestamp>.csv` and prints a summary table |
 
@@ -37,14 +39,20 @@ swift run fullscreen-spike bench com.apple.Safari com.apple.dt.Xcode --runs 10
 
 | Step | Does | Checks |
 |---|---|---|
-| `app` | Finds the app or launches it in the background, then waits for a standard window (≤ 10 s) | A standard window exists |
+| `app` | Finds the app or launches it in the background, then waits for a standard window. If none appears within 2 s, reopens the app (like a Dock click) so it creates one, and waits up to 10 s more | A standard window exists |
 | `already-done` | Fullscreen mode only: skips everything if the window is already fullscreen on the target display | |
-| `exit-fullscreen` | Sets `AXFullScreen = false` if the window is fullscreen | Reads false and the frame stops changing (≤ 5 s) |
+| `exit-fullscreen` | Sets `AXFullScreen = false` if the window is fullscreen | Reads false, the menu bar status items are back (≤ 2 s), and the frame has stopped changing for 300 ms |
 | `move` | Sets the frame to the target's visible area (up to 3 attempts) | The window is mostly on the target display (≤ 2 s per attempt) |
-| `verify-maximized` | Maximized mode only | The frame matches the visible area within 2 pt |
-| `enter-fullscreen` | Activates the app, raises the window, sets `AXFullScreen = true` (up to 3 attempts, 0.5 s / 1 s backoff) | Reads true, on the target display, and fills it (≤ 5 s per attempt) |
+| `verify-maximized` | Maximized mode only. Sets the frame again (up to 3 times) if the app applied the move late and the size got clamped | The frame matches the visible area within 2 pt |
+| `enter-fullscreen` | Activates the app, raises the window, sets `AXFullScreen = true` (up to 3 attempts, 0.5 s / 1 s backoff) | For 300 ms in a row: reads true, fills the target display, and the display shows no menu bar status items and no other apps' windows (≤ 5 s per attempt) |
 
 On notched MacBooks, most apps' fullscreen windows sit below the camera housing, so "fills the display" allows the top edge to be inset by up to 50 pt.
+
+### Knowing when fullscreen has really finished
+
+`AXFullScreen` reads true about 0.1 s after it's set, long before the ~0.6 s animation ends, and on a notched MacBook a fullscreen window has the same frame as a maximized one. So the attribute and frame alone can't confirm the transition. The on-screen window list can: once a fullscreen Space is showing, the menu bar status items (Control Center and menu extras) and every other app's windows disappear from that display. `Displays.onScreen(on:excludingPID:)` counts them from `CGWindowListCopyWindowInfo` using only owner PIDs, layers and bounds, which needs no Screen Recording permission.
+
+This list only stays current while AppKit's event loop runs, so the tool runs its commands inside `NSApplication.run()`, as the real app will.
 
 ## Bench scenarios
 
