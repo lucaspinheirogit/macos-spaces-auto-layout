@@ -1,6 +1,6 @@
 # macOS Spaces Auto Layout
 
-A macOS app for people who move between desks. You define **setups** (for example *MacBook only*, *MacBook + 1 monitor*, *MacBook + 2 monitors*) and choose which apps go on each display. The goal is for the app to rearrange your windows automatically when you plug into a different setup.
+A macOS app for people who move between desks. You define **setups** (for example *MacBook only*, *MacBook + 1 monitor*, *MacBook + 2 monitors*) and choose which apps go on each display. The goal is for the app to rearrange your windows when you plug into a different setup, either automatically or after asking you.
 
 ## Status
 
