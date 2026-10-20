@@ -24,7 +24,7 @@ struct LayoutsView: View {
 
             VStack(spacing: 8) {
                 ForEach(store.layouts) { layout in
-                    LayoutRowView(layout: layout)
+                    LayoutRowView(layout: layout, store: store)
                 }
             }
         }
@@ -35,6 +35,7 @@ struct LayoutsView: View {
 
 struct LayoutRowView: View {
     @ObservedObject var layout: Layout
+    var store: LayoutStore
     @State private var showEditor = false
 
     var body: some View {
@@ -65,9 +66,15 @@ struct LayoutRowView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
 
-            Toggle("", isOn: $layout.isActive)
-                .toggleStyle(.switch)
-                .labelsHidden()
+            Toggle("", isOn: Binding(
+                get: { layout.isActive },
+                set: { isOn in
+                    if isOn { store.activate(layout) }
+                    else     { store.deactivate(layout) }
+                }
+            ))
+            .toggleStyle(.switch)
+            .labelsHidden()
         }
         .padding(12)
         .background(
@@ -76,7 +83,7 @@ struct LayoutRowView: View {
                 .shadow(color: .black.opacity(0.06), radius: 2, x: 0, y: 1)
         )
         .sheet(isPresented: $showEditor) {
-            LayoutEditorView(layout: layout)
+            LayoutEditorView(layout: layout, store: store)
         }
     }
 }

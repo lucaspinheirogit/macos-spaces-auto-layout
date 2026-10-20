@@ -53,38 +53,51 @@ class LayoutStore: ObservableObject {
     @Published var layouts: [Layout]
 
     init() {
-        layouts = [
-            Layout(
-                name: "Single Monitor",
-                monitors: [
-                    MonitorConfig(name: "Monitor 1", role: .primary, apps: [])
-                ],
-                isActive: false
-            ),
-            Layout(
-                name: "Dual Monitor",
-                monitors: [
-                    MonitorConfig(name: "Monitor 1", role: .primary, apps: []),
-                    MonitorConfig(name: "Monitor 2", role: .extended, apps: [])
-                ],
-                isActive: false
-            ),
-            Layout(
-                name: "Triple Monitor",
-                monitors: [
-                    MonitorConfig(name: "Monitor 1", role: .primary, apps: []),
-                    MonitorConfig(name: "Monitor 2", role: .extended, apps: []),
-                    MonitorConfig(name: "Monitor 3", role: .extended, apps: [])
-                ],
-                isActive: false
-            )
-        ]
+        if let loaded = HammerspoonManager.shared.loadLayouts() {
+            layouts = loaded
+        } else {
+            layouts = [
+                Layout(
+                    name: "Single Monitor",
+                    monitors: [MonitorConfig(name: "Monitor 1", role: .primary, apps: [])]
+                ),
+                Layout(
+                    name: "Dual Monitor",
+                    monitors: [
+                        MonitorConfig(name: "Monitor 1", role: .primary, apps: []),
+                        MonitorConfig(name: "Monitor 2", role: .extended, apps: [])
+                    ]
+                ),
+                Layout(
+                    name: "Triple Monitor",
+                    monitors: [
+                        MonitorConfig(name: "Monitor 1", role: .primary, apps: []),
+                        MonitorConfig(name: "Monitor 2", role: .extended, apps: []),
+                        MonitorConfig(name: "Monitor 3", role: .extended, apps: [])
+                    ]
+                )
+            ]
+        }
     }
 
     func activate(_ layout: Layout) {
-        for l in layouts {
-            l.isActive = (l.id == layout.id)
-        }
+        layout.isActive = true
         objectWillChange.send()
+        HammerspoonManager.shared.syncLayouts(layouts)
+    }
+
+    func deactivate(_ layout: Layout) {
+        layout.isActive = false
+        objectWillChange.send()
+        HammerspoonManager.shared.syncLayouts(layouts)
+    }
+
+    func saveAndSync(_ layout: Layout, name: String, monitors: [MonitorConfig]) {
+        layout.name = name
+        layout.monitors = monitors
+        objectWillChange.send()
+        if layout.isActive {
+            HammerspoonManager.shared.syncLayouts(layouts)
+        }
     }
 }

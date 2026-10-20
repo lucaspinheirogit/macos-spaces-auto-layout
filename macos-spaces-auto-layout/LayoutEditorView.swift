@@ -11,14 +11,16 @@ import UniformTypeIdentifiers
 
 struct LayoutEditorView: View {
     @ObservedObject var layout: Layout
+    var store: LayoutStore
     @Environment(\.dismiss) private var dismiss
 
     // Local editing copy — Cancel discards, Save commits
     @State private var layoutName: String
     @State private var monitors: [MonitorConfig]
 
-    init(layout: Layout) {
+    init(layout: Layout, store: LayoutStore) {
         self.layout = layout
+        self.store = store
         _layoutName = State(initialValue: layout.name)
         _monitors = State(initialValue: layout.monitors)
     }
@@ -58,8 +60,7 @@ struct LayoutEditorView: View {
                 .keyboardShortcut(.cancelAction)
 
                 Button("Save") {
-                    layout.name = layoutName
-                    layout.monitors = monitors
+                    store.saveAndSync(layout, name: layoutName, monitors: monitors)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
@@ -198,5 +199,6 @@ struct AppRowView: View {
 }
 
 #Preview {
-    LayoutEditorView(layout: LayoutStore().layouts[1])
+    let store = LayoutStore()
+    LayoutEditorView(layout: store.layouts[1], store: store)
 }
