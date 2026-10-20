@@ -12,7 +12,7 @@ A macOS app that arranges windows by "setup": the user defines which apps go on 
 - [`docs/testing.md`](docs/testing.md): how to add tests, and what to check by hand
 - [`docs/glossary.md`](docs/glossary.md): the domain words, the types that hold them, and coordinate systems
 - [`docs/research/`](docs/research/README.md): feasibility research and spike results (dated snapshots)
-- [`spike/README.md`](spike/README.md): the fullscreen spike (`WindowKit` library + CLI)
+- [`spike/README.md`](spike/README.md): the fullscreen spike CLI, built on the `Packages/WindowEngine` package
 
 ## Build and test
 
@@ -23,6 +23,12 @@ xcodebuild -project macos-spaces-auto-layout.xcodeproj \
   -scheme macos-spaces-auto-layout \
   -destination 'platform=macOS' \
   build test
+```
+
+Window engine (Swift package, linked by the app):
+
+```sh
+cd Packages/WindowEngine && swift build && swift test
 ```
 
 Spike (Swift package):

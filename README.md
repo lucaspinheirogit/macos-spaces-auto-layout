@@ -30,7 +30,8 @@ macos-spaces-auto-layout/          App target
   Persistence/                     DeskSetupStore (observable) and the versioned JSON file
   Views/                           Setups list, setup editor and their parts
 macos-spaces-auto-layoutTests/     Unit tests (Swift Testing) and Fixtures/ with saved-file examples
-spike/                             Fullscreen spike: WindowKit library + CLI (see spike/README.md)
+Packages/WindowEngine/             Window engine package: displays, Accessibility, placing windows
+spike/                             Fullscreen spike CLI and bench (see spike/README.md)
 CLAUDE.md                          Instructions for Claude Code sessions, build and test commands
 .github/                           CI workflow and pull request template
 docs/
