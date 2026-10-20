@@ -31,6 +31,14 @@ jobs:
             CODE_SIGN_IDENTITY=- \
             build test
 
+  window-engine:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test the WindowEngine package
+        working-directory: Packages/WindowEngine
+        run: swift build && swift test
+
   spike:
     runs-on: macos-26
     steps:

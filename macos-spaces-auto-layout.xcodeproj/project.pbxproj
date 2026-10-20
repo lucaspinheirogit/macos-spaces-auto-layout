@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1B5F00B32F7ECF150020E511 /* WindowEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 1B5F00B22F7ECF150020E511 /* WindowEngine */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1B5F00A22F7ECF150020E511 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -46,6 +50,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B5F00B32F7ECF150020E511 /* WindowEngine in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,6 +118,7 @@
 			);
 			name = "macos-spaces-auto-layout";
 			packageProductDependencies = (
+				1B5F00B22F7ECF150020E511 /* WindowEngine */,
 			);
 			productName = "macos-spaces-auto-layout";
 			productReference = 1B5F00642F7ECF150020E511 /* macos-spaces-auto-layout.app */;
@@ -146,6 +152,9 @@
 			);
 			mainGroup = 1B5F005B2F7ECF150020E511;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1B5F00B12F7ECF150020E511 /* XCLocalSwiftPackageReference "Packages/WindowEngine" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1B5F00652F7ECF150020E511 /* Products */;
 			projectDirPath = "";
@@ -447,6 +456,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1B5F00B12F7ECF150020E511 /* XCLocalSwiftPackageReference "Packages/WindowEngine" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/WindowEngine;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B5F00B22F7ECF150020E511 /* WindowEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WindowEngine;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1B5F005C2F7ECF150020E511 /* Project object */;
 }
