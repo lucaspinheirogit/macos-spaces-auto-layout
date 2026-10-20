@@ -22,9 +22,9 @@ Three build units, each with its own tests:
 
 - **The app** (`macos-spaces-auto-layout/`, Xcode project): SwiftUI setup editor plus `setups.json` persistence. It links `WindowEngine` but doesn't call it yet.
 - **`Packages/WindowEngine`** (local Swift package): places one app's window on one display, maximized or fullscreen, through the Accessibility API. Everything that touches macOS comes in through protocol seams, so the tests run on fakes and a `TestClock`.
-- **`spike/`** (Swift package): the `fullscreen-spike` CLI and bench report that drive `WindowEngine` on real windows.
+- **`spike/`** (Swift package): the `fullscreen-spike` CLI, which drives `WindowEngine` on real windows, and the bench report code.
 
-Actor isolation differs between them, and that trips up new code: the app target defaults to `MainActor`, but its test target and `WindowEngine` don't. Mark test suites that use the store or editor model `@MainActor`, and mark package code that calls Accessibility, `NSWorkspace` or `NSScreen` `@MainActor`.
+Actor isolation differs between them, and that trips up new code: the app target defaults to `MainActor`, but its test target and `WindowEngine` don't. See [`docs/conventions.md`](docs/conventions.md#concurrency).
 
 ## Build and test
 
@@ -43,10 +43,13 @@ Window engine (Swift package, linked by the app):
 cd Packages/WindowEngine && swift build && swift test
 ```
 
-One suite (append `/<testName>()` for one test; the `xcodebuild` line takes the same project, scheme and destination as above):
+One suite (append `/<testName>()` for one test, e.g. `DeskSetupStoreTests/repairsDuplicateIdsOnLoad()`):
 
 ```sh
-xcodebuild … test -only-testing:macos-spaces-auto-layoutTests/DeskSetupStoreTests
+xcodebuild -project macos-spaces-auto-layout.xcodeproj \
+  -scheme macos-spaces-auto-layout \
+  -destination 'platform=macOS' \
+  test -only-testing:macos-spaces-auto-layoutTests/DeskSetupStoreTests
 cd Packages/WindowEngine && swift test --filter WindowPlacerTests
 ```
 
