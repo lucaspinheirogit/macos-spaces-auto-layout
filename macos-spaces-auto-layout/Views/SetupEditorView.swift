@@ -1,10 +1,5 @@
-//
-//  SetupEditorView.swift
-//  macos-spaces-auto-layout
-//
-
-import SwiftUI
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 
 struct SetupEditorView: View {

@@ -23,7 +23,9 @@ public enum Geometry {
 
     /// Whether a fullscreen window frame fills the display. Full width and bottom-aligned; the top may be
     /// inset (on notched MacBooks most apps' fullscreen windows sit below the camera housing).
-    public static func fillsDisplay(_ frame: CGRect, bounds: CGRect, tolerance: CGFloat = 2, maxTopInset: CGFloat = 50) -> Bool {
+    public static func fillsDisplay(_ frame: CGRect, bounds: CGRect, tolerance: CGFloat = 2, maxTopInset: CGFloat = 50)
+        -> Bool
+    {
         abs(frame.minX - bounds.minX) <= tolerance
             && abs(frame.width - bounds.width) <= tolerance
             && abs(frame.maxY - bounds.maxY) <= tolerance

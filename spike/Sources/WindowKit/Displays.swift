@@ -40,7 +40,8 @@ public enum Displays {
         return sorted.enumerated().map { index, id in
             let bounds = CGDisplayBounds(id)
             let screen = screen(for: id)
-            let visible = screen.map { Geometry.topLeftRect(fromAppKit: $0.visibleFrame, primaryHeight: primaryHeight) } ?? bounds
+            let visible =
+                screen.map { Geometry.topLeftRect(fromAppKit: $0.visibleFrame, primaryHeight: primaryHeight) } ?? bounds
             return DisplayInfo(
                 index: index,
                 id: id,
@@ -77,15 +78,16 @@ public enum Displays {
 
     public static func onScreen(on display: DisplayInfo, excludingPID pid: pid_t) -> OnScreen {
         let statusLevel = Int(CGWindowLevelForKey(.statusWindow))
-        let infos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+        let infos =
+            CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
             as? [[String: Any]] ?? []
         var statusItems = 0
         var otherAppWindows = 0
         for info in infos {
             guard let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
-                  let bounds = CGRect(dictionaryRepresentation: boundsDict),
-                  bounds.width > 1, bounds.height > 1, Geometry.isCentered(bounds, in: display.bounds),
-                  let layer = info[kCGWindowLayer as String] as? Int
+                let bounds = CGRect(dictionaryRepresentation: boundsDict),
+                bounds.width > 1, bounds.height > 1, Geometry.isCentered(bounds, in: display.bounds),
+                let layer = info[kCGWindowLayer as String] as? Int
             else { continue }
             let owner = info[kCGWindowOwnerPID as String] as? pid_t
             if layer == statusLevel { statusItems += 1 }

@@ -1,11 +1,6 @@
-//
-//  SetupStore.swift
-//  macos-spaces-auto-layout
-//
-
 import Foundation
-import Observation
 import OSLog
+import Observation
 
 /// Holds the user's setups and saves every change to disk.
 @Observable

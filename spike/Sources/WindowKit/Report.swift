@@ -31,7 +31,10 @@ public struct PlacementReport: Sendable, Equatable {
     public let mode: PlacementMode
     public let steps: [StepResult]
 
-    public init(app: String, run: Int, scenario: String, fromDisplay: Int?, toDisplay: Int, mode: PlacementMode, steps: [StepResult]) {
+    public init(
+        app: String, run: Int, scenario: String, fromDisplay: Int?, toDisplay: Int, mode: PlacementMode,
+        steps: [StepResult]
+    ) {
         self.app = app
         self.run = run
         self.scenario = scenario

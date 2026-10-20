@@ -1,8 +1,3 @@
-//
-//  MacosSpacesAutoLayoutApp.swift
-//  macos-spaces-auto-layout
-//
-
 import SwiftUI
 
 @main

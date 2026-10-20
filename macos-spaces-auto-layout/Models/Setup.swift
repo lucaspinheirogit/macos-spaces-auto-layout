@@ -1,8 +1,3 @@
-//
-//  Setup.swift
-//  macos-spaces-auto-layout
-//
-
 import Foundation
 
 /// A physical desk arrangement (e.g. "MacBook + 2 monitors") and the apps placed on each display.
@@ -36,7 +31,7 @@ nonisolated struct SetupDisplay: Codable, Identifiable, Hashable, Sendable {
 /// An app assigned to a display, identified by its bundle identifier.
 nonisolated struct AppPlacement: Codable, Identifiable, Hashable, Sendable {
     var id = UUID()
-    var bundleId: String   // e.g. "com.tinyspeck.slackmacgap"
+    var bundleId: String  // e.g. "com.tinyspeck.slackmacgap"
     var name: String
 }
 

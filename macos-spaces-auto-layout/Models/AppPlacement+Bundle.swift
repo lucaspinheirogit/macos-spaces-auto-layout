@@ -1,8 +1,3 @@
-//
-//  AppPlacement+Bundle.swift
-//  macos-spaces-auto-layout
-//
-
 import Foundation
 
 extension AppPlacement {
@@ -15,7 +10,8 @@ extension AppPlacement {
         func value(_ key: String) -> String? {
             bundle.localizedInfoDictionary?[key] as? String ?? bundle.infoDictionary?[key] as? String
         }
-        let name = value("CFBundleDisplayName")
+        let name =
+            value("CFBundleDisplayName")
             ?? value("CFBundleName")
             ?? appURL.deletingPathExtension().lastPathComponent
         self.init(bundleId: bundleId, name: name)

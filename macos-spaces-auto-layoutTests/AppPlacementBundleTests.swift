@@ -1,10 +1,6 @@
-//
-//  AppPlacementBundleTests.swift
-//  macos-spaces-auto-layoutTests
-//
-
 import Foundation
 import Testing
+
 @testable import macos_spaces_auto_layout
 
 final class AppPlacementBundleTests {
@@ -16,7 +12,8 @@ final class AppPlacementBundleTests {
 
     /// Creates `<directory>/<name>.app/Contents/Info.plist` with the given keys,
     /// plus an English `InfoPlist.strings` when `localized` is given.
-    private func makeApp(named name: String, plist: [String: String], localized: [String: String]? = nil) throws -> URL {
+    private func makeApp(named name: String, plist: [String: String], localized: [String: String]? = nil) throws -> URL
+    {
         let appURL = directory.appendingPathComponent("\(name).app")
         let contents = appURL.appendingPathComponent("Contents")
         try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
@@ -33,11 +30,13 @@ final class AppPlacementBundleTests {
     }
 
     @Test func prefersDisplayName() throws {
-        let url = try makeApp(named: "Folder", plist: [
-            "CFBundleIdentifier": "com.example.app",
-            "CFBundleDisplayName": "Display Name",
-            "CFBundleName": "Bundle Name",
-        ])
+        let url = try makeApp(
+            named: "Folder",
+            plist: [
+                "CFBundleIdentifier": "com.example.app",
+                "CFBundleDisplayName": "Display Name",
+                "CFBundleName": "Bundle Name",
+            ])
         let app = try #require(AppPlacement(appURL: url))
         #expect(app.bundleId == "com.example.app")
         #expect(app.name == "Display Name")
@@ -57,10 +56,12 @@ final class AppPlacementBundleTests {
     }
 
     @Test func fallsBackToBundleName() throws {
-        let url = try makeApp(named: "Folder", plist: [
-            "CFBundleIdentifier": "com.example.app",
-            "CFBundleName": "Bundle Name",
-        ])
+        let url = try makeApp(
+            named: "Folder",
+            plist: [
+                "CFBundleIdentifier": "com.example.app",
+                "CFBundleName": "Bundle Name",
+            ])
         #expect(AppPlacement(appURL: url)?.name == "Bundle Name")
     }
 

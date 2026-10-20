@@ -1,24 +1,29 @@
 import CoreGraphics
 import Testing
+
 @testable import WindowKit
 
 struct GeometryTests {
     @Test func convertsAppKitRectToTopLeft() {
         // Menu bar (24 pt) at the top of a 1000 pt tall primary display.
         let visible = CGRect(x: 0, y: 0, width: 1600, height: 976)
-        #expect(Geometry.topLeftRect(fromAppKit: visible, primaryHeight: 1000) == CGRect(x: 0, y: 24, width: 1600, height: 976))
+        #expect(
+            Geometry.topLeftRect(fromAppKit: visible, primaryHeight: 1000)
+                == CGRect(x: 0, y: 24, width: 1600, height: 976))
     }
 
     @Test func convertsRectOnSecondaryDisplayAbovePrimary() {
         // A display stacked above the primary has a negative top-left y.
         let rect = CGRect(x: 100, y: 1000, width: 1920, height: 1080)
-        #expect(Geometry.topLeftRect(fromAppKit: rect, primaryHeight: 1000) == CGRect(x: 100, y: -1080, width: 1920, height: 1080))
+        #expect(
+            Geometry.topLeftRect(fromAppKit: rect, primaryHeight: 1000)
+                == CGRect(x: 100, y: -1080, width: 1920, height: 1080))
     }
 
     @Test func picksDisplayWithLargestOverlap() {
         let left = CGRect(x: 0, y: 0, width: 1000, height: 800)
         let right = CGRect(x: 1000, y: 0, width: 1000, height: 800)
-        let window = CGRect(x: 900, y: 100, width: 400, height: 300) // 100 pt on left, 300 pt on right
+        let window = CGRect(x: 900, y: 100, width: 400, height: 300)  // 100 pt on left, 300 pt on right
         #expect(Geometry.bestMatch(for: window, in: [left, right]) == 1)
     }
 

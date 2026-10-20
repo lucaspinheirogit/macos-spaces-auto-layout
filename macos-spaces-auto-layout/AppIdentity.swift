@@ -1,8 +1,3 @@
-//
-//  AppIdentity.swift
-//  macos-spaces-auto-layout
-//
-
 import Foundation
 
 enum AppIdentity {
