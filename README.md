@@ -38,9 +38,11 @@ macos-spaces-auto-layout/          App target
   Views/                           Setups list and setup editor
 macos-spaces-auto-layoutTests/     Unit tests (Swift Testing)
 spike/                             Fullscreen spike: WindowKit library + CLI (see spike/README.md)
+CLAUDE.md                          Instructions for Claude Code sessions
 docs/
   architecture.md                  How the code is organized
-  roadmap.md                       Phases and how work is tracked (GitHub Issues + milestones)
+  roadmap.md                       Phases (GitHub milestones)
+  workflow.md                      How work is tracked and shipped with GitHub Issues
   research/                        Feasibility research and recommended architecture
   design-1.png, design-2.png       UI mockups
 ```

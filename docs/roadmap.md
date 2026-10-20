@@ -1,6 +1,6 @@
 # Roadmap
 
-What we're building next, in order. The work itself lives in **GitHub Issues**; this page explains the phases and how the tracking works. For why the phases are in this order, see the [recommended architecture](research/04-recommended-architecture.md#roadmap).
+What we're building next, in order. The work itself lives in **GitHub Issues**; this page explains the phases. For why the phases are in this order, see the [recommended architecture](research/04-recommended-architecture.md#roadmap).
 
 ## Phases
 
@@ -18,23 +18,4 @@ Ideas that aren't in a phase yet are open issues with the [`idea`](https://githu
 
 ## How we track work
 
-| Label | Meaning |
-|---|---|
-| `enhancement` | A planned feature, in a phase |
-| `research` | A spike, measurement or product decision |
-| `idea` | A possible feature, not committed to a phase |
-| `bug` | Something that's broken |
-
-- **Pick up work** from the lowest open milestone.
-- **Close issues from PRs:** put `Closes #12` in the PR description, and merging closes the issue.
-- **Promote an idea** by giving it the `enhancement` label and a milestone.
-- **Record decisions in the docs**, not only in issue comments: the docs describe how the app works today.
-
-With the GitHub CLI:
-
-```sh
-gh issue list --milestone "Phase 1: Engine MVP"          # what's left in a phase
-gh issue list --label idea                               # the idea list
-gh issue create --label idea --title "…" --body "…"      # add an idea
-gh issue edit 22 --remove-label idea --add-label enhancement --milestone "Phase 3: Polish"
-```
+Labels, milestones, what to do when picking up an issue, and how PRs close issues: see [workflow.md](workflow.md).
