@@ -37,6 +37,7 @@ macos-spaces-auto-layout/          App target
   Store/                           SetupStore (observable) and JSON file storage
   Views/                           Setups list and setup editor
 macos-spaces-auto-layoutTests/     Unit tests (Swift Testing)
+spike/                             Fullscreen spike: WindowKit library + CLI (see spike/README.md)
 docs/
   architecture.md                  How the code is organized
   research/                        Feasibility research and recommended roadmap
