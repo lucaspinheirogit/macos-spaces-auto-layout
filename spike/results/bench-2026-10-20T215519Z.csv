@@ -1,0 +1,4 @@
+app,run,scenario,from_display,to_display,mode,success,failed_step,total_ms,steps
+com.apple.Safari,1,fullscreen-move,1,0,fullscreen,0,enter-fullscreen,17574,app:1:1|exit-fullscreen:795:1|move:1:1|enter-fullscreen:16777:0:3
+com.apple.Safari,2,fullscreen-move,1,0,fullscreen,0,enter-fullscreen,17631,app:0:1|exit-fullscreen:838:1|move:2:1|enter-fullscreen:16791:0:3
+com.apple.Safari,3,fullscreen-move,1,0,fullscreen,0,enter-fullscreen,17651,app:1:1|exit-fullscreen:836:1|move:17:1|enter-fullscreen:16797:0:3

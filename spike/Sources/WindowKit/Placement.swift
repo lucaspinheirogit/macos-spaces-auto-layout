@@ -99,7 +99,9 @@ public struct Placement {
         while !moved && attempts < moveAttempts {
             attempts += 1
             window.setFrame(target.visibleBounds)
-            moved = await Wait.until(timeout: moveTimeout) { isOnTarget(window) }
+            // Right after leaving fullscreen, macOS can still put the window back where it was; the frame we set reads
+            // back at once, so only trust it once it has held.
+            moved = await Wait.until(timeout: moveTimeout, stableFor: settleTime) { isOnTarget(window) }
         }
         guard record("move", since: start, ok: moved, attempts: attempts, "frame=\(Geometry.describe(window.frame))")
         else { return steps }

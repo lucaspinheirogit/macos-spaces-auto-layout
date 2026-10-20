@@ -1,14 +1,18 @@
 # 05: Fullscreen Spike Results
 
-*Measured 2026-10-20 on a 14" MacBook Pro (notched built-in display, 1512×982 pt), macOS 26, single display. Tool and method: [`spike/`](../../spike/README.md).*
+*Measured 2026-10-20 on a 14" MacBook Pro (notched built-in display, 1512×982 pt), macOS 26. Two-display runs add a 2560×1440 pt [BetterDisplay](https://github.com/waydabber/BetterDisplay) virtual screen to the right of the built-in display. Tool and method: [`spike/`](../../spike/README.md).*
 
 ## Verdict so far
 
 **On one display: go.** Native fullscreen can be entered and left reliably with public APIs only. All 6 apps tested succeeded in **120 of 120 runs** (one run needed a retry), as long as the app itself was responsive. Figma's numbers come from a re-run after it installed a pending update; before it, Figma failed 9 of 10 exits (see finding 6).
 
-**Not tested yet: moving fullscreen windows between displays**, which is the core of the product. That needs a second display (a BetterDisplay virtual screen or a real monitor) and decides the final go/no-go from [04 → Phase 0](04-recommended-architecture.md#roadmap).
+**Across two displays, on a virtual screen: go.** Moving a fullscreen window to the other display (exit → move → enter), the core of the product, succeeded in **120 of 120 runs**, 60 in each direction; 2 runs needed a retry. That clears the ≥ 95% bar from [04 → Phase 0](04-recommended-architecture.md#roadmap). It depends on the move check waiting for the window to hold its new position (finding 8).
+
+**Not confirmed yet on a real monitor**, which decides the final go/no-go.
 
 ## Results
+
+### One display
 
 20 runs per app, alternating the two single-display scenarios:
 
@@ -25,7 +29,26 @@ Times cover the whole placement: finding the window, the transition, and a 300 m
 
 ¹ The run took 6.4 s: the first fullscreen attempt timed out after 5 s, and the second succeeded. No other run came near the 5 s timeout. These CSVs predate the attempt count in the `steps` field, so the retry is read from the timing.
 
-Warp wasn't benchmarked, because it was the terminal running the tool. Raw data: [`spike/results/`](../../spike/results/).
+### Two displays (virtual screen)
+
+20 runs per app of `fullscreen-move`, alternating built-in → virtual and virtual → built-in:
+
+| App | Success | Total p50 / p95 | Retries |
+|---|---|---|---|
+| Arc | 20/20 | 2578 / 2661 ms | – |
+| Cursor | 20/20 | 1906 / 1983 ms | – |
+| Slack | 20/20 | 1914 / 5864 ms | 2 runs² |
+| Safari | 20/20 | 2002 / 2092 ms | – |
+| Xcode | 20/20 | 2114 / 2181 ms | – |
+| Figma | 20/20 | 1941 / 2048 ms | – |
+
+Per step, across all 120 runs (p50 / p95): exit 777 / 1315 ms, move 352 / 487 ms, enter 848 / 921 ms. Both directions take about the same time (p50 2.0 s). The four runs over 3 s were each app's first or second run, where leaving fullscreen took 2.4–2.8 s.
+
+² Run 1 needed a second move attempt (5.9 s); run 2 needed a second move and a second fullscreen attempt (9.4 s, the slowest run).
+
+On both displays, entering fullscreen only counts once the target display shows no status items, so the signal from finding 2 works on a secondary display. Manual `place` runs showed the status items coming back on the display the window left, in both directions.
+
+Warp wasn't benchmarked, because it was the terminal running the tool. Raw data: [`spike/results/`](../../spike/results/). `bench-2026-10-20T215519Z.csv` shows the failure from finding 8: three runs that timed out because fullscreen came back on the display the window had left.
 
 ## What the spike found
 
@@ -64,11 +87,12 @@ Each of these changed how the engine has to work:
    - With the terminal in fullscreen, its Space hid the status items on the shared display.
    - `Placement` activates the target app and raises its window before each fullscreen attempt. The engine must also wait until that window is on screen before judging the result (not built yet).
 
+8. **Right after leaving fullscreen, a move can be undone.**
+   - Just after the exit, macOS can still put the window back where it was on the display it left.
+   - The frame set by `move` reads back at once, so a check that trusts the first reading passes, and fullscreen is then entered on the old display. Without a fix, every cross-display move failed this way.
+   - Fix: `move` only counts once the window has stayed on the target for 300 ms, and sets the frame again if it doesn't (up to 3 attempts).
+
 ## What's next
 
-1. **Two-display bench.**
-   - Create a virtual screen in BetterDisplay (already installed) and run `swift run fullscreen-spike bench --runs 20`.
-   - Each run moves a fullscreen window to the other display: exit → move → enter.
-   - Check that the signals behave on a secondary display too: status items should come back on the display the window left (an `exit-fullscreen` note says when they don't), and disappear from the one it entered.
-   - Then confirm on a real monitor.
+1. **Confirm on a real monitor.** Plug one in and run `swift run fullscreen-spike bench --runs 20` again. Timing and display identity can differ from a virtual screen.
 2. Decide the go/no-go from that result, then promote `WindowKit` from the spike into the app ([04 → Phase 1](04-recommended-architecture.md#roadmap)).
