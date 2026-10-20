@@ -1,48 +1,42 @@
 //
-//  LayoutEditorView.swift
+//  SetupEditorView.swift
 //  macos-spaces-auto-layout
-//
-//  Created by Lucas Pinheiro on 02/04/26.
 //
 
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-struct LayoutEditorView: View {
-    @ObservedObject var layout: Layout
-    var store: LayoutStore
+struct SetupEditorView: View {
+    let store: SetupStore
     @Environment(\.dismiss) private var dismiss
 
     // Local editing copy — Cancel discards, Save commits
-    @State private var layoutName: String
-    @State private var monitors: [MonitorConfig]
+    @State private var draft: Setup
 
-    init(layout: Layout, store: LayoutStore) {
-        self.layout = layout
+    init(setup: Setup, store: SetupStore) {
         self.store = store
-        _layoutName = State(initialValue: layout.name)
-        _monitors = State(initialValue: layout.monitors)
+        _draft = State(initialValue: setup)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header + Monitor columns in the same container
+            // Header + display columns in the same container
             VStack(alignment: .leading, spacing: 12) {
                 VStack(spacing: 4) {
-                    TextField("Layout name", text: $layoutName)
+                    TextField("Setup name", text: $draft.name)
                         .font(.headline)
                         .multilineTextAlignment(.center)
                         .textFieldStyle(.roundedBorder)
-                    Text("\(layout.monitorCount) Monitor\(layout.monitorCount == 1 ? "" : "s")")
+                    Text(draft.displayCountLabel)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
 
                 HStack(alignment: .top, spacing: 16) {
-                    ForEach($monitors) { $monitor in
-                        MonitorColumnView(monitor: $monitor)
+                    ForEach($draft.displays) { $display in
+                        DisplayColumnView(display: $display, isMain: display.id == draft.displays.first?.id)
                     }
                 }
             }
@@ -60,7 +54,7 @@ struct LayoutEditorView: View {
                 .keyboardShortcut(.cancelAction)
 
                 Button("Save") {
-                    store.saveAndSync(layout, name: layoutName, monitors: monitors)
+                    store.update(draft)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
@@ -76,8 +70,9 @@ struct LayoutEditorView: View {
     }
 }
 
-struct MonitorColumnView: View {
-    @Binding var monitor: MonitorConfig
+struct DisplayColumnView: View {
+    @Binding var display: SetupDisplay
+    let isMain: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -85,15 +80,17 @@ struct MonitorColumnView: View {
             HStack {
                 Image(systemName: "desktopcomputer")
                     .foregroundStyle(Color.accentColor)
-                Text(monitor.name)
+                Text(display.name)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 Spacer()
-                Text(monitor.role.rawValue)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-                    .tracking(0.5)
+                if isMain {
+                    Text("MAIN")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                        .tracking(0.5)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -102,9 +99,9 @@ struct MonitorColumnView: View {
 
             // App list
             VStack(spacing: 0) {
-                ForEach(monitor.apps) { app in
+                ForEach(display.apps) { app in
                     AppRowView(app: app)
-                    if app.id != monitor.apps.last?.id {
+                    if app.id != display.apps.last?.id {
                         Divider().padding(.leading, 36)
                     }
                 }
@@ -112,8 +109,8 @@ struct MonitorColumnView: View {
 
             // Add App button
             Button {
-                pickApp { entry in
-                    if let entry { monitor.apps.append(entry) }
+                pickApp { app in
+                    if let app { display.apps.append(app) }
                 }
             } label: {
                 HStack {
@@ -138,7 +135,7 @@ struct MonitorColumnView: View {
         .frame(minWidth: 200)
     }
 
-    private func pickApp(completion: @escaping (AppEntry?) -> Void) {
+    private func pickApp(completion: @escaping (AppPlacement?) -> Void) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -153,33 +150,32 @@ struct MonitorColumnView: View {
                 completion(nil)
                 return
             }
-
-            let plistURL = url.appendingPathComponent("Contents/Info.plist")
-            var name = url.deletingPathExtension().lastPathComponent
-            var bundleId: String? = nil
-
-            if let data = try? Data(contentsOf: plistURL),
-               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] {
-                name = plist["CFBundleDisplayName"] as? String
-                    ?? plist["CFBundleName"] as? String
-                    ?? name
-                bundleId = plist["CFBundleIdentifier"] as? String
+            guard let app = AppPlacement(appURL: url) else {
+                showMissingBundleIdAlert(for: url)
+                completion(nil)
+                return
             }
-
-            completion(AppEntry(name: name, bundleId: bundleId))
+            completion(app)
         }
+    }
+
+    private func showMissingBundleIdAlert(for url: URL) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Can't add \(url.deletingPathExtension().lastPathComponent)"
+        alert.informativeText = "This app has no bundle identifier, so it can't be recognized later."
+        alert.runModal()
     }
 }
 
 struct AppRowView: View {
-    let app: AppEntry
+    let app: AppPlacement
 
     private var appIcon: NSImage {
-        if let bundleId = app.bundleId,
-           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleId) {
             return NSWorkspace.shared.icon(forFile: url.path)
         }
-        return NSWorkspace.shared.icon(forFileType: "app")
+        return NSWorkspace.shared.icon(for: .applicationBundle)
     }
 
     var body: some View {
@@ -199,6 +195,5 @@ struct AppRowView: View {
 }
 
 #Preview {
-    let store = LayoutStore()
-    LayoutEditorView(layout: store.layouts[1], store: store)
+    SetupEditorView(setup: Setup.defaults[1], store: SetupStore(storage: .preview))
 }

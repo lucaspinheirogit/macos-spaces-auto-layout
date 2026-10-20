@@ -91,4 +91,4 @@ After macOS 15 broke Space moves, the maintainer refused to copy yabai's Dock in
   2. **Native fullscreen per display**, done carefully with step-by-step verification.
   3. **Launching missing apps** as part of applying a setup.
   4. **No configuration language** (unlike Hammerspoon, yabai or AeroSpace).
-- If native fullscreen proves too unreliable, the app becomes "Moom/Rectangle Pro, but simpler", which is a much weaker pitch. That's why the **fullscreen spike should come first** (see [05](05-recommended-architecture.md)).
+- If native fullscreen proves too unreliable, the app becomes "Moom/Rectangle Pro, but simpler", which is a much weaker pitch. That's why the **fullscreen spike should come first** (see [04](04-recommended-architecture.md)).
