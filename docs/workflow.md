@@ -26,7 +26,7 @@ Every issue has exactly one of these:
 | `idea` | A possible feature, not committed to a phase | None |
 | `bug` | Something that's broken | The phase it blocks, or none until triaged |
 
-GitHub's other default labels (`documentation`, `question`, `duplicate` and so on) aren't used.
+There are no other labels.
 
 ## Milestones
 
