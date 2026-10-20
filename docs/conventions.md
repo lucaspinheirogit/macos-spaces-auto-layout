@@ -4,10 +4,10 @@ How code in this repo is named, organized and checked. Most of it is written and
 
 ## Naming
 
-- **Names say what the thing is in this domain.** Prefer `SetupFileStorage` to `Storage` and `ConditionPoller` to `Wait`. A new name should return only its own hits when searched with `grep -rw`.
+- **Names say what the thing is in this domain.** Prefer `DeskSetupFileStorage` to `Storage` and `ConditionPoller` to `Wait`. A new name should return only its own hits when searched with `grep -rw`.
 - **Use the words from the [glossary](glossary.md).** Use one word per concept. "Maximized" is never also "filled", and "setup" is never also "profile" or "layout".
 - **Don't reuse Apple names** for our own types: `Accessibility`, `Layout`, `Workspace`, `Screen`, `Window`. A bare `Display` is out too.
-- **Files are named after their main type**: `SetupStore.swift` holds `SetupStore`. Extensions that add one feature go in `Type+Feature.swift`, for example `AppPlacement+Bundle.swift`.
+- **Files are named after their main type**: `DeskSetupStore.swift` holds `DeskSetupStore`. Extensions that add one feature go in `Type+Feature.swift`, for example `AppPlacement+Bundle.swift`.
 - **One SwiftUI view type per file.** Small private helper views can stay in their parent's file.
 - **Properties and locals:**
   - Booleans read as questions: `isMain`, `isBuiltin`.
