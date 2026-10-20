@@ -15,9 +15,9 @@ let usage = """
     """
 
 let testApps = [
-    "company.thebrowser.Browser",       // Arc
-    "com.todesktop.230313mzl4w4u92",    // Cursor
-    "com.tinyspeck.slackmacgap",        // Slack
+    "company.thebrowser.Browser",  // Arc
+    "com.todesktop.230313mzl4w4u92",  // Cursor
+    "com.tinyspeck.slackmacgap",  // Slack
     "com.apple.Safari",
     "com.apple.dt.Xcode",
     "com.figma.Desktop",
@@ -52,7 +52,8 @@ func fail(_ message: String) -> Never {
 
 func requireAccessibility() {
     guard Accessibility.isTrusted(prompt: true) else {
-        fail("""
+        fail(
+            """
             Accessibility permission is missing. Grant it to your terminal app in
             System Settings → Privacy & Security → Accessibility, then run this again.
             """)
@@ -75,7 +76,9 @@ func listDisplays() {
         print("    uuid    \(d.uuid)")
         print("    bounds  \(Geometry.describe(d.bounds))   visible \(Geometry.describe(d.visibleBounds))")
     }
-    print("Displays have separate Spaces: \(Displays.separateSpacesEnabled ? "on" : "OFF (fullscreen per display won't work)")")
+    print(
+        "Displays have separate Spaces: \(Displays.separateSpacesEnabled ? "on" : "OFF (fullscreen per display won't work)")"
+    )
 }
 
 func listWindows(_ bundleId: String) {
@@ -86,7 +89,9 @@ func listWindows(_ bundleId: String) {
     if windows.isEmpty { print("No windows visible to Accessibility (windows on other Spaces may be hidden).") }
     for (i, w) in windows.enumerated() {
         let display = w.frame.flatMap { Displays.display(for: $0, in: displays) }.map { "[\($0.index)]" } ?? "?"
-        print("#\(i) \"\(w.title ?? "")\" \(w.subrole ?? "?") frame=\(Geometry.describe(w.frame)) fullscreen=\(w.isFullScreen.map(String.init) ?? "?") display=\(display)")
+        print(
+            "#\(i) \"\(w.title ?? "")\" \(w.subrole ?? "?") frame=\(Geometry.describe(w.frame)) fullscreen=\(w.isFullScreen.map(String.init) ?? "?") display=\(display)"
+        )
     }
 }
 
@@ -99,9 +104,11 @@ func place(_ bundleId: String, displayIndex: Int, mode: PlacementMode) async {
     let displays = Displays.current()
     guard displays.indices.contains(displayIndex) else { fail("No display \(displayIndex). Run `displays`.") }
     print("\(bundleId) → [\(displayIndex)] \(displays[displayIndex].name), \(mode.rawValue)")
-    let steps = await Placement().place(bundleId, on: displays[displayIndex], among: displays, mode: mode, onStep: printStep)
-    let report = PlacementReport(app: bundleId, run: 1, scenario: "manual", fromDisplay: nil,
-                                 toDisplay: displayIndex, mode: mode, steps: steps)
+    let steps = await Placement().place(
+        bundleId, on: displays[displayIndex], among: displays, mode: mode, onStep: printStep)
+    let report = PlacementReport(
+        app: bundleId, run: 1, scenario: "manual", fromDisplay: nil,
+        toDisplay: displayIndex, mode: mode, steps: steps)
     print(report.success ? "OK in \(report.totalMs) ms" : "FAILED at \(report.failedStep ?? "?")")
 }
 
@@ -112,9 +119,13 @@ func trace(_ bundleId: String, useButton: Bool) async {
         fail("\(bundleId) has no standard window")
     }
     let displays = Displays.current()
-    guard let display = window.frame.flatMap({ Displays.display(for: $0, in: displays) }) else { fail("window is off-screen") }
+    guard let display = window.frame.flatMap({ Displays.display(for: $0, in: displays) }) else {
+        fail("window is off-screen")
+    }
     let target = !(window.isFullScreen ?? false)
-    print("\(useButton ? "Pressing the fullscreen button" : "Setting AXFullScreen=\(target)") on \"\(window.title ?? "")\"")
+    print(
+        "\(useButton ? "Pressing the fullscreen button" : "Setting AXFullScreen=\(target)") on \"\(window.title ?? "")\""
+    )
     print("    ms  attr   status others  frame")
     app.activate()
     window.raise()
@@ -125,8 +136,9 @@ func trace(_ bundleId: String, useButton: Bool) async {
         let ms = (ContinuousClock.now - start).milliseconds
         let attr = window.isFullScreen.map(String.init) ?? "?"
         let screen = Displays.onScreen(on: display, excludingPID: app.processIdentifier)
-        print(String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
-              String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows), Geometry.describe(window.frame))
+        print(
+            String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
+            String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows), Geometry.describe(window.frame))
         try? await Task.sleep(for: .milliseconds(50))
     }
 }
@@ -158,7 +170,9 @@ func bench(_ bundleIds: [String], runs: Int) async {
     let placement = Placement()
     var reports: [PlacementReport] = []
 
-    print("Bench: \(bundleIds.count) apps × \(runs) runs on \(displays.count) display(s). Don't touch the mouse or keyboard.")
+    print(
+        "Bench: \(bundleIds.count) apps × \(runs) runs on \(displays.count) display(s). Don't touch the mouse or keyboard."
+    )
     for bundleId in bundleIds {
         guard NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) != nil else {
             print("\n\(bundleId): not installed, skipped")
@@ -197,8 +211,9 @@ func bench(_ bundleIds: [String], runs: Int) async {
                 scenario = mode == .fullscreen ? "normal-to-fullscreen" : "fullscreen-to-maximized"
             }
             let steps = await placement.place(bundleId, on: displays[to], among: displays, mode: mode)
-            let report = PlacementReport(app: bundleId, run: run, scenario: scenario, fromDisplay: from,
-                                         toDisplay: to, mode: mode, steps: steps)
+            let report = PlacementReport(
+                app: bundleId, run: run, scenario: scenario, fromDisplay: from,
+                toDisplay: to, mode: mode, steps: steps)
             reports.append(report)
             let outcome = report.success ? "✓" : "✗ \(report.failedStep ?? "?"): \(steps.last?.detail ?? "")"
             print("  #\(run) \(scenario) \(report.totalMs) ms \(outcome)")
@@ -223,8 +238,9 @@ func writeCSV(_ reports: [PlacementReport]) {
     let resultsDir = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         .appendingPathComponent("results")
-    let stamp = Date.now.ISO8601Format(.iso8601.year().month().day().dateSeparator(.dash)
-        .time(includingFractionalSeconds: false).timeSeparator(.omitted).timeZone(separator: .omitted))
+    let stamp = Date.now.ISO8601Format(
+        .iso8601.year().month().day().dateSeparator(.dash)
+            .time(includingFractionalSeconds: false).timeSeparator(.omitted).timeZone(separator: .omitted))
     let url = resultsDir.appendingPathComponent("bench-\(stamp).csv")
     let csv = ([PlacementReport.csvHeader] + reports.map(\.csvRow)).joined(separator: "\n") + "\n"
     do {
@@ -241,8 +257,11 @@ func printSummary(_ reports: [PlacementReport]) {
     print("--- | --- | --- | --- | --- | ---")
     for s in BenchSummary.make(from: reports) {
         let rate = String(format: "%d/%d (%.0f%%)", s.successes, s.runs, s.successRate * 100)
-        let failures = s.failuresByStep.sorted { $0.key < $1.key }.map { "\($0.key)×\($0.value)" }.joined(separator: ", ")
-        print("\(s.app) | \(s.scenario) | \(rate) | \(s.p50Ms.map(String.init) ?? "-") | \(s.p95Ms.map(String.init) ?? "-") | \(failures.isEmpty ? "-" : failures)")
+        let failures = s.failuresByStep.sorted { $0.key < $1.key }.map { "\($0.key)×\($0.value)" }.joined(
+            separator: ", ")
+        print(
+            "\(s.app) | \(s.scenario) | \(rate) | \(s.p50Ms.map(String.init) ?? "-") | \(s.p95Ms.map(String.init) ?? "-") | \(failures.isEmpty ? "-" : failures)"
+        )
     }
 }
 
@@ -281,7 +300,7 @@ func run() async {
 }
 
 let application = NSApplication.shared
-application.setActivationPolicy(.prohibited)   // no Dock icon or menu bar
+application.setActivationPolicy(.prohibited)  // no Dock icon or menu bar
 Task {
     await run()
     exit(0)

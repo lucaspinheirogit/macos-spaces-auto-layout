@@ -1,5 +1,7 @@
 # Feasibility Research: Setup-Based Auto Layout for macOS
 
+> **Dated snapshot.** This records what was found and planned at the time. For how the code works today see [architecture](../architecture.md); for what's next see the [roadmap](../roadmap.md).
+
 *Research date: 2026-10-20. Covers macOS 15 Sequoia, macOS 26 Tahoe and the macOS 27 betas.*
 
 ## The goal

@@ -21,7 +21,9 @@ public enum Wait {
 
     /// Waits until the window's frame hasn't changed for `stableFor` (i.e. its animation has finished).
     @MainActor
-    public static func forStableFrame(_ window: AXWindow, stableFor: Duration = .milliseconds(300), timeout: Duration) async -> Bool {
+    public static func forStableFrame(_ window: AXWindow, stableFor: Duration = .milliseconds(300), timeout: Duration)
+        async -> Bool
+    {
         let deadline = ContinuousClock.now + timeout
         var last = window.frame
         var stableSince = ContinuousClock.now

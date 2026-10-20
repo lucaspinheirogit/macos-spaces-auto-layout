@@ -1,10 +1,6 @@
-//
-//  SetupStoreTests.swift
-//  macos-spaces-auto-layoutTests
-//
-
 import Foundation
 import Testing
+
 @testable import macos_spaces_auto_layout
 
 @MainActor

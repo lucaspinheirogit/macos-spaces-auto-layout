@@ -7,3 +7,13 @@ xcuserdata/
 DerivedData/
 build/
 .build/
+
+# Swift Package Manager (Xcode creates .swiftpm when it opens a package)
+.swiftpm/
+
+# Test results and coverage
+*.xcresult
+*.profraw
+
+# Claude Code agent worktrees
+.claude/worktrees/

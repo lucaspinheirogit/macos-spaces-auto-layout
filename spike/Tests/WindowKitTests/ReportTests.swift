@@ -1,14 +1,22 @@
 import Testing
+
 @testable import WindowKit
 
 struct ReportTests {
-    private func report(_ app: String = "com.apple.Safari", scenario: String = "s", steps: [StepResult]) -> PlacementReport {
-        PlacementReport(app: app, run: 1, scenario: scenario, fromDisplay: 0, toDisplay: 1, mode: .fullscreen, steps: steps)
+    private func report(_ app: String = "com.apple.Safari", scenario: String = "s", steps: [StepResult])
+        -> PlacementReport
+    {
+        PlacementReport(
+            app: app, run: 1, scenario: scenario, fromDisplay: 0, toDisplay: 1, mode: .fullscreen, steps: steps)
     }
 
     @Test func successNeedsEveryStepOk() {
-        #expect(report(steps: [StepResult(name: "app", ok: true, ms: 5), StepResult(name: "move", ok: true, ms: 10)]).success)
-        #expect(!report(steps: [StepResult(name: "app", ok: true, ms: 5), StepResult(name: "move", ok: false, ms: 10)]).success)
+        #expect(
+            report(steps: [StepResult(name: "app", ok: true, ms: 5), StepResult(name: "move", ok: true, ms: 10)])
+                .success)
+        #expect(
+            !report(steps: [StepResult(name: "app", ok: true, ms: 5), StepResult(name: "move", ok: false, ms: 10)])
+                .success)
         #expect(!report(steps: []).success)
     }
 
@@ -24,8 +32,9 @@ struct ReportTests {
     @Test func csvRowMatchesHeader() {
         let r = report(steps: [StepResult(name: "app", ok: true, ms: 5, detail: "ignored, not in CSV")])
         #expect(r.csvRow == "com.apple.Safari,1,s,0,1,fullscreen,1,,5,app:5:1")
-        #expect(r.csvRow.split(separator: ",", omittingEmptySubsequences: false).count
-            == PlacementReport.csvHeader.split(separator: ",").count)
+        #expect(
+            r.csvRow.split(separator: ",", omittingEmptySubsequences: false).count
+                == PlacementReport.csvHeader.split(separator: ",").count)
     }
 
     @Test func csvStepsListAttemptsOnlyWhenRetried() {

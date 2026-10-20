@@ -1,8 +1,3 @@
-//
-//  SetupsListView.swift
-//  macos-spaces-auto-layout
-//
-
 import SwiftUI
 
 struct SetupsListView: View {

@@ -29,8 +29,11 @@ public struct Placement {
         onStep: (StepResult) -> Void = { _ in }
     ) async -> [StepResult] {
         var steps: [StepResult] = []
-        func record(_ name: String, since start: ContinuousClock.Instant, ok: Bool, attempts: Int = 1, _ detail: String = "") -> Bool {
-            let step = StepResult(name: name, ok: ok, ms: (ContinuousClock.now - start).milliseconds, attempts: attempts, detail: detail)
+        func record(
+            _ name: String, since start: ContinuousClock.Instant, ok: Bool, attempts: Int = 1, _ detail: String = ""
+        ) -> Bool {
+            let step = StepResult(
+                name: name, ok: ok, ms: (ContinuousClock.now - start).milliseconds, attempts: attempts, detail: detail)
             steps.append(step)
             onStep(step)
             return ok
@@ -81,13 +84,19 @@ public struct Placement {
             let exited = await Wait.until(timeout: fullscreenTimeout) { window.isFullScreen == false }
             // The attribute flips at once; the desktop is back when the menu bar status items reappear.
             // With an always-hidden menu bar they never do, so fall back to the frame settling.
-            let desktopBack = exited ? await Wait.until(timeout: desktopTimeout, stableFor: settleTime) {
-                Displays.onScreen(on: source, excludingPID: app.processIdentifier).statusItems > 0
-            } : false
-            let settled = exited ? await Wait.forStableFrame(window, stableFor: settleTime, timeout: fullscreenTimeout) : false
-            let exitDetail = !exited ? "still fullscreen (AXError \(error.rawValue))"
-                : !settled ? "frame still changing"
-                : desktopBack ? "" : "status items never reappeared (menu bar hidden?)"
+            let desktopBack =
+                exited
+                ? await Wait.until(timeout: desktopTimeout, stableFor: settleTime) {
+                    Displays.onScreen(on: source, excludingPID: app.processIdentifier).statusItems > 0
+                } : false
+            let settled =
+                exited ? await Wait.forStableFrame(window, stableFor: settleTime, timeout: fullscreenTimeout) : false
+            let exitDetail =
+                !exited
+                ? "still fullscreen (AXError \(error.rawValue))"
+                : !settled
+                    ? "frame still changing"
+                    : desktopBack ? "" : "status items never reappeared (menu bar hidden?)"
             guard record("exit-fullscreen", since: start, ok: exited && settled, exitDetail)
             else { return steps }
         }
@@ -120,7 +129,9 @@ public struct Placement {
                     window.frame.map { Geometry.approximatelyEqual($0, target.visibleBounds) } ?? false
                 }
             }
-            _ = record("verify-maximized", since: start, ok: filled, attempts: attempts, "frame=\(Geometry.describe(window.frame))")
+            _ = record(
+                "verify-maximized", since: start, ok: filled, attempts: attempts,
+                "frame=\(Geometry.describe(window.frame))")
             return steps
         }
 
@@ -140,14 +151,15 @@ public struct Placement {
             // and other apps' windows are gone from the target display, steadily.
             entered = await Wait.until(timeout: fullscreenTimeout, stableFor: settleTime) {
                 guard window.isFullScreen == true, isOnTarget(window),
-                      window.frame.map({ Geometry.fillsDisplay($0, bounds: target.bounds) }) ?? false
+                    window.frame.map({ Geometry.fillsDisplay($0, bounds: target.bounds) }) ?? false
                 else { return false }
                 let screen = Displays.onScreen(on: target, excludingPID: app.processIdentifier)
                 return screen.statusItems == 0 && screen.otherAppWindows == 0
             }
         }
-        _ = record("enter-fullscreen", since: start, ok: entered, attempts: attempts,
-                   "fullscreen=\(window.isFullScreen.map(String.init) ?? "?") frame=\(Geometry.describe(window.frame))")
+        _ = record(
+            "enter-fullscreen", since: start, ok: entered, attempts: attempts,
+            "fullscreen=\(window.isFullScreen.map(String.init) ?? "?") frame=\(Geometry.describe(window.frame))")
         return steps
     }
 }

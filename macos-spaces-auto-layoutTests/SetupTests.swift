@@ -1,10 +1,6 @@
-//
-//  SetupTests.swift
-//  macos-spaces-auto-layoutTests
-//
-
 import Foundation
 import Testing
+
 @testable import macos_spaces_auto_layout
 
 struct SetupTests {
@@ -31,10 +27,12 @@ struct SetupTests {
     }
 
     @Test func roundTripsThroughJSON() throws {
-        let setup = Setup(name: "Home desk", displays: [
-            SetupDisplay(name: "Display 1", apps: [AppPlacement(bundleId: "com.apple.Safari", name: "Safari")]),
-            SetupDisplay(name: "Display 2", apps: []),
-        ])
+        let setup = Setup(
+            name: "Home desk",
+            displays: [
+                SetupDisplay(name: "Display 1", apps: [AppPlacement(bundleId: "com.apple.Safari", name: "Safari")]),
+                SetupDisplay(name: "Display 2", apps: []),
+            ])
         let data = try JSONEncoder().encode(setup)
         #expect(try JSONDecoder().decode(Setup.self, from: data) == setup)
     }

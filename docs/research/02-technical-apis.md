@@ -1,5 +1,7 @@
 # 02: Technical APIs
 
+> **Dated snapshot.** This records what was found and planned at the time. For how the code works today see [architecture](../architecture.md); for what's next see the [roadmap](../roadmap.md).
+
 This document covers the APIs the app would need: for each one, what it does, whether it's public, and what can go wrong.
 
 ## Overview: how each feature maps to an API

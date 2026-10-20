@@ -33,10 +33,14 @@ public struct AXWindow {
 
     /// Frame in global top-left coordinates.
     public var frame: CGRect? {
-        guard let positionValue = axValue(kAXPositionAttribute), let sizeValue = axValue(kAXSizeAttribute) else { return nil }
+        guard let positionValue = axValue(kAXPositionAttribute), let sizeValue = axValue(kAXSizeAttribute) else {
+            return nil
+        }
         var position = CGPoint.zero
         var size = CGSize.zero
-        guard AXValueGetValue(positionValue, .cgPoint, &position), AXValueGetValue(sizeValue, .cgSize, &size) else { return nil }
+        guard AXValueGetValue(positionValue, .cgPoint, &position), AXValueGetValue(sizeValue, .cgSize, &size) else {
+            return nil
+        }
         return CGRect(origin: position, size: size)
     }
 
@@ -113,7 +117,7 @@ public struct AXApp {
     public var windows: [AXWindow] {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXWindowsAttribute as CFString, &value) == .success,
-              let elements = value as? [AXUIElement]
+            let elements = value as? [AXUIElement]
         else { return [] }
         return elements.map(AXWindow.init(element:))
     }
@@ -122,7 +126,8 @@ public struct AXApp {
     public var standardWindow: AXWindow? {
         var value: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, kAXMainWindowAttribute as CFString, &value) == .success,
-           let raw = value, CFGetTypeID(raw) == AXUIElementGetTypeID() {
+            let raw = value, CFGetTypeID(raw) == AXUIElementGetTypeID()
+        {
             let main = AXWindow(element: raw as! AXUIElement)
             if main.isStandard { return main }
         }
