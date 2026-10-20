@@ -9,7 +9,8 @@ All suites use **Swift Testing** (`import Testing`, `@Test`, `#expect`). CI runs
 | Target | Runs with | Covers |
 |---|---|---|
 | `macos-spaces-auto-layoutTests` | `xcodebuild … test`, or ⌘U in Xcode | The setups model, its storage, and reading app bundles |
-| Spike package tests | `swift test` | The pure parts of the window code |
+| `WindowEngineTests` | `swift test` in `Packages/WindowEngine` | Every window placement step and failure path (with fakes on a test clock), waits, geometry and the window-list counting |
+| `BenchReportTests` | `swift test` in `spike` | The bench CSV and summary |
 
 None of them need Accessibility permission. None of them move real windows or read the real `setups.json`.
 
@@ -20,7 +21,7 @@ None of them need Accessibility permission. None of them move real windows or re
 3. The test target doesn't default to `@MainActor` the way the app does. Mark a suite `@MainActor` when it uses main-actor types such as the store.
 4. **Files:** create a temporary folder in the suite's `init` and delete it in `deinit`. Swift Testing creates a new suite instance for every test, so each test gets a clean folder. Pass a storage that points into that folder; never use the default location.
 5. **Saved data formats:** keep an example file for each format that has shipped, and test that it still decodes (see [conventions](conventions.md#saved-data)).
-6. **Code that talks to macOS** (Accessibility, `NSWorkspace`, the window list, clocks): test it through a protocol with a fake implementation. Keep the decision logic in plain functions that take values, so it can be tested without fakes.
+6. **Code that talks to macOS** (Accessibility, `NSWorkspace`, the window list, clocks): test it through a protocol with a fake implementation. Keep the decision logic in plain functions that take values, so it can be tested without fakes. The window engine's fakes, and a `TestClock` whose sleeps return at once, are in `Packages/WindowEngine/Tests/WindowEngineTests/Fakes/`.
 
 ## Checks by hand
 

@@ -20,7 +20,7 @@ How code in this repo is named, organized and checked. Most of it is written and
 | Code | Place |
 |---|---|
 | App entry point, SwiftUI views, the setups model and its storage | `macos-spaces-auto-layout/`, in the folder for its area |
-| Window engine: Accessibility, displays, placing windows | The window engine package (see [architecture](architecture.md)) |
+| Window engine: Accessibility, displays, placing windows | `Packages/WindowEngine` (see [architecture](architecture.md#window-engine)) |
 | Measurement and bench tools | `spike/` |
 | App tests | `macos-spaces-auto-layoutTests/`, one file per suite |
 

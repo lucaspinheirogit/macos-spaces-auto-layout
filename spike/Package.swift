@@ -5,16 +5,18 @@ let package = Package(
     name: "FullscreenSpike",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "WindowKit", targets: ["WindowKit"]),
-        .executable(name: "fullscreen-spike", targets: ["fullscreen-spike"]),
+        .executable(name: "fullscreen-spike", targets: ["fullscreen-spike"])
+    ],
+    dependencies: [
+        .package(path: "../Packages/WindowEngine")
     ],
     targets: [
-        .target(name: "WindowKit"),
+        .target(name: "BenchReport", dependencies: ["WindowEngine"]),
         .executableTarget(
             name: "fullscreen-spike",
-            dependencies: ["WindowKit"],
+            dependencies: ["BenchReport", "WindowEngine"],
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
-        .testTarget(name: "WindowKitTests", dependencies: ["WindowKit"]),
+        .testTarget(name: "BenchReportTests", dependencies: ["BenchReport", "WindowEngine"]),
     ]
 )
