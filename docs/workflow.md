@@ -21,10 +21,12 @@ Every issue has exactly one of these:
 
 | Label | Meaning | Milestone |
 |---|---|---|
-| `enhancement` | A planned feature | Its phase |
+| `enhancement` | Planned work: a feature, refactor or docs task | Its phase |
 | `research` | A spike, measurement or product decision | Its phase |
 | `idea` | A possible feature, not committed to a phase | None |
 | `bug` | Something that's broken | The phase it blocks, or none until triaged |
+
+GitHub's other default labels (`documentation`, `question`, `duplicate` and so on) aren't used.
 
 ## Milestones
 
@@ -77,7 +79,7 @@ Every issue has exactly one of these:
 
 - When a decision is made (for example an answer in the product-questions issue), write it into the doc it affects, tick it in the issue, and comment with a link to the doc.
 - If a result changes the plan (for example the spike says no-go for fullscreen), update `roadmap.md`, the research doc and the affected issues together, after confirming with the user.
-- Duplicates: close the newer issue with a comment linking to the older one.
+- Duplicates: after confirming with the user, close the newer issue with a comment linking to the older one.
 
 ## Commands
 
@@ -91,7 +93,7 @@ gh issue create --title "…" --body "…" --label enhancement --milestone "Phas
 gh issue edit 22 --remove-label idea --add-label enhancement --milestone "Phase 3: Polish"
 gh issue comment 5 --body "Decided: … (see docs/…)"
 gh issue close 29 --reason "not planned" --comment "Why: …"
-gh api repos/{owner}/{repo}/milestones -q '.[] | "\(.number) \(.title): \(.open_issues) open, \(.closed_issues) closed"'
+gh api repos/{owner}/{repo}/milestones?state=all -q '.[] | "\(.number) \(.title): \(.open_issues) open, \(.closed_issues) closed"'
 ```
 
-To tick a checklist item, edit the issue body: `gh issue view <n> --json body -q .body > body.md`, change `- [ ]` to `- [x]`, then `gh issue edit <n> --body-file body.md`.
+To tick a checklist item, edit the issue body: `gh issue view <n> --json body -q .body > "$TMPDIR/body.md"`, change `- [ ]` to `- [x]`, then `gh issue edit <n> --body-file "$TMPDIR/body.md"`.
