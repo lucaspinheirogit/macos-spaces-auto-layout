@@ -1,18 +1,9 @@
 import AppKit
 import ApplicationServices
 
-public enum Accessibility {
-    /// Whether this process may control other apps. With `prompt`, macOS shows the permission dialog if not.
-    @MainActor
-    public static func isTrusted(prompt: Bool) -> Bool {
-        // String value of kAXTrustedCheckOptionPrompt (the C global isn't concurrency-safe to reference).
-        AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": prompt] as CFDictionary)
-    }
-}
-
 /// A window of another app, controlled through the Accessibility API.
 @MainActor
-public struct AXWindow {
+public struct AccessibilityWindow {
     /// Not in the public headers as a kAX constant, but readable and settable on standard windows.
     static let fullScreenAttribute = "AXFullScreen"
 
@@ -100,37 +91,5 @@ public struct AXWindow {
     private func axValue(_ attribute: String) -> AXValue? {
         guard let raw = copyValue(attribute), CFGetTypeID(raw) == AXValueGetTypeID() else { return nil }
         return (raw as! AXValue)
-    }
-}
-
-/// Another app's Accessibility root element.
-@MainActor
-public struct AXApp {
-    public let app: NSRunningApplication
-    let element: AXUIElement
-
-    public init(_ app: NSRunningApplication) {
-        self.app = app
-        element = AXUIElementCreateApplication(app.processIdentifier)
-    }
-
-    public var windows: [AXWindow] {
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXWindowsAttribute as CFString, &value) == .success,
-            let elements = value as? [AXUIElement]
-        else { return [] }
-        return elements.map(AXWindow.init(element:))
-    }
-
-    /// The app's main window if it's a standard window, otherwise its first standard window.
-    public var standardWindow: AXWindow? {
-        var value: CFTypeRef?
-        if AXUIElementCopyAttributeValue(element, kAXMainWindowAttribute as CFString, &value) == .success,
-            let raw = value, CFGetTypeID(raw) == AXUIElementGetTypeID()
-        {
-            let main = AXWindow(element: raw as! AXUIElement)
-            if main.isStandard { return main }
-        }
-        return windows.first(where: \.isStandard)
     }
 }

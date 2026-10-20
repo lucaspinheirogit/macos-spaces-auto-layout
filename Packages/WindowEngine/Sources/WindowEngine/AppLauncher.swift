@@ -12,13 +12,13 @@ public enum AppLauncherError: Error, CustomStringConvertible {
 
 @MainActor
 public enum AppLauncher {
-    public static func running(_ bundleId: String) -> NSRunningApplication? {
+    public static func runningApplication(bundleId: String) -> NSRunningApplication? {
         NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first
     }
 
     /// Returns the running app, launching it in the background first if needed.
     public static func runningOrLaunch(_ bundleId: String) async throws -> NSRunningApplication {
-        if let app = running(bundleId) { return app }
+        if let app = runningApplication(bundleId: bundleId) { return app }
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
             throw AppLauncherError.notInstalled(bundleId)
         }

@@ -2,15 +2,15 @@ import CoreGraphics
 
 /// Pure rectangle math. All rects are in global coordinates with a top-left origin
 /// (the space used by the Accessibility API and `CGDisplayBounds`) unless stated otherwise.
-public enum Geometry {
-    /// Converts an AppKit rect (bottom-left origin, e.g. `NSScreen.visibleFrame`) to top-left coordinates.
-    /// `primaryHeight` is the height of the primary display (the one with the menu bar, `NSScreen.screens[0]`).
-    public static func topLeftRect(fromAppKit rect: CGRect, primaryHeight: CGFloat) -> CGRect {
-        CGRect(x: rect.minX, y: primaryHeight - rect.maxY, width: rect.width, height: rect.height)
+public enum ScreenGeometry {
+    /// Converts an AppKit rect (bottom-left origin, e.g. `NSScreen.visibleFrame`) to global top-left coordinates.
+    /// `primaryDisplayHeight` is the height of the primary display (the one with the menu bar).
+    public static func globalTopLeftRect(fromAppKitRect rect: CGRect, primaryDisplayHeight: CGFloat) -> CGRect {
+        CGRect(x: rect.minX, y: primaryDisplayHeight - rect.maxY, width: rect.width, height: rect.height)
     }
 
     /// Index of the rect in `candidates` that overlaps `frame` the most, or nil if none overlap.
-    public static func bestMatch(for frame: CGRect, in candidates: [CGRect]) -> Int? {
+    public static func indexOfLargestOverlap(with frame: CGRect, in candidates: [CGRect]) -> Int? {
         let areas = candidates.map { area(of: frame.intersection($0)) }
         guard let best = areas.indices.max(by: { areas[$0] < areas[$1] }), areas[best] > 0 else { return nil }
         return best
@@ -23,9 +23,9 @@ public enum Geometry {
 
     /// Whether a fullscreen window frame fills the display. Full width and bottom-aligned; the top may be
     /// inset (on notched MacBooks most apps' fullscreen windows sit below the camera housing).
-    public static func fillsDisplay(_ frame: CGRect, bounds: CGRect, tolerance: CGFloat = 2, maxTopInset: CGFloat = 50)
-        -> Bool
-    {
+    public static func isFullscreenFrame(
+        _ frame: CGRect, displayBounds bounds: CGRect, tolerance: CGFloat = 2, maxTopInset: CGFloat = 50
+    ) -> Bool {
         abs(frame.minX - bounds.minX) <= tolerance
             && abs(frame.width - bounds.width) <= tolerance
             && abs(frame.maxY - bounds.maxY) <= tolerance
@@ -34,12 +34,12 @@ public enum Geometry {
     }
 
     /// Whether `rect`'s center lies inside `bounds`. A window hanging over a display's edge doesn't count as on it.
-    public static func isCentered(_ rect: CGRect, in bounds: CGRect) -> Bool {
+    public static func centerIsInside(_ rect: CGRect, bounds: CGRect) -> Bool {
         bounds.contains(CGPoint(x: rect.midX, y: rect.midY))
     }
 
     /// `x,y wxh` in whole points, or `?` for no frame.
-    public static func describe(_ frame: CGRect?) -> String {
+    public static func debugFrameDescription(_ frame: CGRect?) -> String {
         guard let f = frame else { return "?" }
         return "\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height))"
     }
