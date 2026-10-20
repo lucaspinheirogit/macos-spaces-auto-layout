@@ -9,9 +9,9 @@
 | yabai / private Spaces APIs? | **No** | Break nearly every macOS release; some need SIP disabled ([02 §5](02-technical-apis.md#5-spaces-desktops-private-apis-only)) |
 | Engine tech | **Native Swift**: Accessibility API (AXUIElement), CoreGraphics (CGDisplay), NSWorkspace | All public and stable. One app, one permission |
 | Placement modes | **Maximized** (default, reliable) + **Native fullscreen** (opt-in, best-effort with checks) | Fullscreen per display has no direct API ([02 §4](02-technical-apis.md#4-accessibility-api-axuielement-moving-resizing-fullscreen)) |
-| Apps that aren't running | **Per app**: each app has a "launch if not running" option, on by default | Most apps should be ready when you sit down; some (a heavy IDE, a game) should only be arranged if you opened them |
-| Applying on display change | **Per setup**: off, ask first (default), or automatic | Asking first is the safe default while the engine is new; a desk you trust can be switched to automatic |
-| Apps with several windows | **One window per app in v1**: its main window, else its first standard window | Telling windows apart (by title or order) is the hard part; rules for several windows come later ([#18](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/18)) |
+| Apps that aren't running | **Per app**: each app has a "launch if not running" option, on by default. Until the editor has a control for it, every app uses the default | Most apps should be ready when you sit down; some (a heavy IDE, a game) should only be arranged if you opened them |
+| Applying on display change | **Per setup**: off, ask first (default), or automatic. Asking shows a notification and the same prompt in the menu bar item, so it still works with notifications off | Asking first is the safe default while the engine is new; a desk you trust can be switched to automatic |
+| Apps with several windows | **One window per app in v1**: its main window if that's a standard window, else its first standard window | Telling windows apart (by title or order) is the hard part; rules for several windows come later ([#18](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/18)) |
 | Setup identity | Set of display UUIDs + built-in flag + arrangement | Display IDs change across reboots; screen count is too coarse ([02 §2](02-technical-apis.md#2-identifying-displays)) |
 | Distribution | Developer ID + notarization, not sandboxed, outside the Mac App Store | The Accessibility API doesn't work in the sandbox |
 
@@ -85,14 +85,14 @@ on display change:
   setup = matcher.bestMatch(fp)        // exact UUID set > same count+builtin+sizes > none
   switch setup?.applyMode:
     .automatic: engine.apply(setup)
-    .ask:       notify "Switch to <setup>?" → engine.apply(setup) on confirm
+    .ask:       prompt "Switch to <setup>?" (notification + menu bar item) → engine.apply(setup) on confirm
     .off, nil:  do nothing ("Apply now" still works)
 
 engine.apply(setup):                   // one job at a time, cancel previous run
   for p in setup.placements (non-fullscreen first, then fullscreen, one by one):
-    app = running(p.bundleId)
-          ?? (p.launchIfNotRunning ? launch(p.bundleId, activates: false) : skip, report "not running")
-    win = await mainWindow(app, timeout: 10s)   // AXMainWindow, else first standard window; AXObserver kAXWindowCreated + poll
+    if not running(p.bundleId) and not p.launchIfNotRunning: report "not running"; continue
+    app = running(p.bundleId) ?? launch(p.bundleId, activates: false)
+    win = await standardWindow(app, timeout: 10s)   // WindowKit's AXApp.standardWindow; AXObserver kAXWindowCreated + poll
     target = screen(for: p.displayUUID) ?? fallbackScreen
     if p.mode == .maximized:
         if isFullscreen(win): await setFullscreen(win, false)   // verified
