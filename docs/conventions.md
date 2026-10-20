@@ -22,7 +22,7 @@ How code in this repo is named, organized and checked. Most of it is written and
 | App entry point, SwiftUI views, the setups model and its storage | `macos-spaces-auto-layout/`, in the folder for its area |
 | Window engine: Accessibility, displays, placing windows | The window engine package (see [architecture](architecture.md)) |
 | Measurement and bench tools | `spike/` |
-| App tests | `macos-spaces-auto-layoutTests/`, mirroring the app's folders |
+| App tests | `macos-spaces-auto-layoutTests/`, one file per suite |
 
 Both the app and its tests use Xcode's synchronized folders, so new files are picked up without editing `project.pbxproj`.
 
