@@ -1,5 +1,7 @@
 # 05: Fullscreen Spike Results
 
+> **Dated snapshot.** This records what was found and planned at the time. For how the code works today see [architecture](../architecture.md); for what's next see the [roadmap](../roadmap.md).
+
 *Measured 2026-10-20 on a 14" MacBook Pro (notched built-in display, 1512×982 pt), macOS 26. Two-display runs add a 2560×1440 pt [BetterDisplay](https://github.com/waydabber/BetterDisplay) virtual screen to the right of the built-in display. Tool and method: [`spike/`](../../spike/README.md).*
 
 ## Verdict so far

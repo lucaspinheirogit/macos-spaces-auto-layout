@@ -1,5 +1,7 @@
 # 04: Recommended Architecture and Roadmap
 
+> **Dated snapshot.** This records what was found and planned at the time. For how the code works today see [architecture](../architecture.md); for what's next see the [roadmap](../roadmap.md).
+
 ## Decision summary
 
 | Question | Decision | Why |

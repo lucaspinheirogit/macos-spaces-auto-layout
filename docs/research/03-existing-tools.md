@@ -1,5 +1,7 @@
 # 03: Existing Tools
 
+> **Dated snapshot.** This records what was found and planned at the time. For how the code works today see [architecture](../architecture.md); for what's next see the [roadmap](../roadmap.md).
+
 **Bottom line:** Several apps already re-apply saved window layouts when displays change: **Moom, Rectangle Pro, Stay and Display Maid**. **None of them reliably place apps in native fullscreen on a chosen display**, and the ones that launch apps don't treat a "setup" as a first-class thing. That combination — fullscreen on a chosen display, launching the apps, and a simple setup UI — is what this project would add.
 
 ## Comparison table

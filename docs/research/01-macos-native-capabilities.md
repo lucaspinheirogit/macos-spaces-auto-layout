@@ -1,5 +1,7 @@
 # 01: What macOS Offers Natively
 
+> **Dated snapshot.** This records what was found and planned at the time. For how the code works today see [architecture](../architecture.md); for what's next see the [roadmap](../roadmap.md).
+
 **Bottom line:** No version of macOS (15 Sequoia, 26 Tahoe, or the 27 betas) has a built-in "workspace profile" or a way to save a layout for each display setup. Some native features help a little, but none of them save "app X fullscreen on display Y" or re-apply it when you plug in different monitors.
 
 > Note: as of Oct 2026 Apple's help pages already list **macOS 27** as current, alongside 26 and 15. The project's deployment target is macOS 15.

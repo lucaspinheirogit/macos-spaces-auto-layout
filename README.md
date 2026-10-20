@@ -19,14 +19,7 @@ The window engine that actually moves apps between displays isn't built yet. See
 
 ## Build, run, test
 
-Open `macos-spaces-auto-layout.xcodeproj` in Xcode and run the `macos-spaces-auto-layout` scheme. To build and run the tests from the command line instead:
-
-```sh
-xcodebuild -project macos-spaces-auto-layout.xcodeproj \
-  -scheme macos-spaces-auto-layout \
-  -destination 'platform=macOS' \
-  build test
-```
+Open `macos-spaces-auto-layout.xcodeproj` in Xcode and run the `macos-spaces-auto-layout` scheme. The command-line build, test and formatting commands are in [CLAUDE.md](CLAUDE.md#build-and-test); [docs/testing.md](docs/testing.md) explains what the tests cover.
 
 ## Project structure
 
@@ -38,12 +31,16 @@ macos-spaces-auto-layout/          App target
   Views/                           Setups list and setup editor
 macos-spaces-auto-layoutTests/     Unit tests (Swift Testing)
 spike/                             Fullscreen spike: WindowKit library + CLI (see spike/README.md)
-CLAUDE.md                          Instructions for Claude Code sessions
+CLAUDE.md                          Instructions for Claude Code sessions, build and test commands
+.github/                           CI workflow and pull request template
 docs/
   architecture.md                  How the code is organized
+  conventions.md                   Naming, code placement, concurrency, saved-data rules
+  testing.md                       Automated tests and manual checks
+  glossary.md                      Domain terms and coordinate systems
   roadmap.md                       Phases (GitHub milestones)
   workflow.md                      How work is tracked and shipped with GitHub Issues
-  research/                        Feasibility research and recommended architecture
+  research/                        Feasibility research and spike results (dated snapshots)
   design-1.png, design-2.png       UI mockups
 ```
 
