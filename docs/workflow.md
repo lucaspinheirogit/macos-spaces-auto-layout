@@ -93,7 +93,7 @@ gh issue create --title "…" --body "…" --label enhancement --milestone "Phas
 gh issue edit 22 --remove-label idea --add-label enhancement --milestone "Phase 3: Polish"
 gh issue comment 5 --body "Decided: … (see docs/…)"
 gh issue close 29 --reason "not planned" --comment "Why: …"
-gh api repos/{owner}/{repo}/milestones?state=all -q '.[] | "\(.number) \(.title): \(.open_issues) open, \(.closed_issues) closed"'
+gh api 'repos/{owner}/{repo}/milestones?state=all' -q '.[] | "\(.number) \(.title): \(.open_issues) open, \(.closed_issues) closed"'
 ```
 
 To tick a checklist item, edit the issue body: `gh issue view <n> --json body -q .body > "$TMPDIR/body.md"`, change `- [ ]` to `- [x]`, then `gh issue edit <n> --body-file "$TMPDIR/body.md"`.
