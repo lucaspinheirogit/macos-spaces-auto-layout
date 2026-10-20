@@ -17,9 +17,8 @@ public enum AppLauncher {
         NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first { !$0.isTerminated }
     }
 
-    /// Returns the running app, launching it in the background first if needed.
-    public static func runningOrLaunch(_ bundleId: String) async throws -> NSRunningApplication {
-        if let app = runningApplication(bundleId: bundleId) { return app }
+    /// Launches the app without bringing it forward. Returns the running instance if there already is one.
+    public static func launchInBackground(_ bundleId: String) async throws -> NSRunningApplication {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false
         return try await NSWorkspace.shared.openApplication(at: url(of: bundleId), configuration: configuration)

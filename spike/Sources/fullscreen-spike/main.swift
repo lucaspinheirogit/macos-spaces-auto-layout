@@ -160,7 +160,9 @@ func trace(_ bundleId: String, useButton: Bool) async throws {
     while ContinuousClock.now - start < .milliseconds(2500) {
         let ms = (ContinuousClock.now - start).wholeMilliseconds
         let attr = (try? window.isFullScreen).map(String.init) ?? "?"
-        let screen = FullscreenSpaceSignals.onScreenWindowCounts(on: display, excludingPID: app.processIdentifier)
+        let screen = FullscreenSpaceSignals.onScreenWindowCounts(
+            in: CoreGraphicsWindowList().onScreenWindows(), onDisplayWithBounds: display.bounds,
+            excludingProcessIdentifier: app.processIdentifier)
         print(
             String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
             String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows),

@@ -1,9 +1,16 @@
-import AppKit
+import CoreGraphics
 
 /// Puts an app's window on a display, maximized or in native fullscreen, checking every step.
 /// Stops at the first step whose check fails, or as soon as the window is gone.
+///
+/// The app, its window, the on-screen window list and the clock come in through protocols, so tests can drive
+/// every step with fakes. The defaults are the real ones.
 @MainActor
 public struct WindowPlacer {
+    public let applicationLocator: any ApplicationLocator
+    public let windowList: any OnScreenWindowListProvider
+    public let poller: ConditionPoller
+
     /// How long to wait for an existing window before reopening the app.
     public var existingWindowTimeout: Duration = .seconds(2)
     /// How long to wait for a window after reopening the app.
@@ -25,7 +32,15 @@ public struct WindowPlacer {
     /// Pause before each fullscreen retry; one more attempt than there are pauses.
     public var fullscreenRetryBackoff: [Duration] = [.milliseconds(500), .seconds(1)]
 
-    public init() {}
+    public init(
+        applicationLocator: any ApplicationLocator = WorkspaceApplicationLocator(),
+        windowList: any OnScreenWindowListProvider = CoreGraphicsWindowList(),
+        poller: ConditionPoller = ConditionPoller()
+    ) {
+        self.applicationLocator = applicationLocator
+        self.windowList = windowList
+        self.poller = poller
+    }
 
     /// Places the app's main (or first) standard window on `target`, which must be one of `displays`.
     /// - Parameter onStep: called as each step finishes, for live output.
@@ -40,11 +55,11 @@ public struct WindowPlacer {
     ) async throws -> [PlacementStepResult] {
         var steps: [PlacementStepResult] = []
         var currentStep = PlacementStep.targetDisplay
-        var start = ContinuousClock.now
+        var start = poller.now
         func record(_ succeeded: Bool, attempts: Int = 1, _ detail: String = "") -> Bool {
             let result = PlacementStepResult(
                 step: currentStep, succeeded: succeeded,
-                elapsedMilliseconds: (ContinuousClock.now - start).wholeMilliseconds, attempts: attempts,
+                elapsedMilliseconds: (poller.now - start).wholeMilliseconds, attempts: attempts,
                 diagnosticDetail: detail)
             steps.append(result)
             onStep(result)
@@ -52,7 +67,7 @@ public struct WindowPlacer {
         }
         func begin(_ step: PlacementStep) {
             currentStep = step
-            start = .now
+            start = poller.now
         }
 
         guard displays.contains(where: { $0.id == target.id }) else {
@@ -63,17 +78,21 @@ public struct WindowPlacer {
         do {
             // 1. Find (or launch) the app and its window.
             begin(.app)
-            let app: NSRunningApplication
+            let pid: pid_t
             do {
-                app = try await AppLauncher.runningOrLaunch(bundleId)
+                if let running = applicationLocator.runningProcessIdentifier(bundleId: bundleId) {
+                    pid = running
+                } else {
+                    pid = try await applicationLocator.launchInBackground(bundleId: bundleId)
+                }
             } catch {
                 _ = record(false, "\(error)")
                 return steps
             }
-            var found: AccessibilityWindow?
+            var found: (any ControllableWindow)?
             func findWindow(timeout: Duration) async throws -> Bool {
-                try await ConditionPoller.waitUntil(timeout: timeout) {
-                    found = AccessibilityApplication(app).mainOrFirstStandardWindow
+                try await poller.waitUntil(timeout: timeout) {
+                    found = applicationLocator.mainOrFirstStandardWindow(processIdentifier: pid)
                     return found != nil
                 }
             }
@@ -82,7 +101,7 @@ public struct WindowPlacer {
             var reopenDetail = ""
             if !(try await findWindow(timeout: existingWindowTimeout)) {
                 do {
-                    try await AppLauncher.reopen(bundleId, activates: mode == .fullscreen)
+                    try await applicationLocator.reopen(bundleId: bundleId, activates: mode == .fullscreen)
                     reopenDetail = "reopened; "
                 } catch {
                     reopenDetail = "reopen failed: \(error); "
@@ -103,12 +122,17 @@ public struct WindowPlacer {
             func frameDetail() throws(AccessibilityError) -> String {
                 "frame=\(ScreenGeometry.debugFrameDescription(try frame()))"
             }
+            func counts(on display: ConnectedDisplay) -> OnScreenWindowCounts {
+                FullscreenSpaceSignals.onScreenWindowCounts(
+                    in: windowList.onScreenWindows(), onDisplayWithBounds: display.bounds,
+                    excludingProcessIdentifier: pid)
+            }
 
             // 2. A minimized window can't be moved or made fullscreen.
             if try readUnlessGone({ try window.isMinimized }) == true {
                 begin(.unminimize)
                 let error = try failureUnlessGone { try window.unminimize() }
-                let restored = try await ConditionPoller.waitUntil(timeout: unminimizeTimeout) {
+                let restored = try await poller.waitUntil(timeout: unminimizeTimeout) {
                     try readUnlessGone { try window.isMinimized } == false
                 }
                 guard record(restored, restored ? "" : "still minimized (\(error.map(String.init) ?? "no error"))")
@@ -127,20 +151,19 @@ public struct WindowPlacer {
                 begin(.exitFullscreen)
                 let source = try frame().flatMap { ConnectedDisplays.display(containing: $0, in: displays) } ?? target
                 let error = try failureUnlessGone { try window.setFullScreen(false) }
-                let exited = try await ConditionPoller.waitUntil(timeout: fullscreenTransitionTimeout) {
+                let exited = try await poller.waitUntil(timeout: fullscreenTransitionTimeout) {
                     try isFullScreen() == false
                 }
                 // The attribute flips at once; the desktop is back when the menu bar status items reappear.
                 // With an always-hidden menu bar they never do, so fall back to the frame settling.
                 let desktopBack =
                     exited
-                    ? try await ConditionPoller.waitUntil(timeout: desktopReturnTimeout, holdingFor: settleTime) {
-                        FullscreenSpaceSignals.onScreenWindowCounts(on: source, excludingPID: app.processIdentifier)
-                            .statusItems > 0
+                    ? try await poller.waitUntil(timeout: desktopReturnTimeout, holdingFor: settleTime) {
+                        counts(on: source).statusItems > 0
                     } : false
                 let settled =
                     exited
-                    ? try await ConditionPoller.waitForStableValue(
+                    ? try await poller.waitForStableValue(
                         stableFor: settleTime, timeout: fullscreenTransitionTimeout, frame) : false
                 let exitDetail =
                     !exited
@@ -161,7 +184,7 @@ public struct WindowPlacer {
                 // The frame we set reads back at once, but right after leaving fullscreen, entering it again that
                 // soon lands on the old display. Waiting for the frame to hold fixes that (see finding 8 in the
                 // spike results).
-                moved = try await ConditionPoller.waitUntil(timeout: moveAttemptTimeout, holdingFor: settleTime) {
+                moved = try await poller.waitUntil(timeout: moveAttemptTimeout, holdingFor: settleTime) {
                     try isOnTarget()
                 }
             }
@@ -177,7 +200,7 @@ public struct WindowPlacer {
                 while !filled && attempts < maximumFrameAttempts {
                     if attempts > 0 { _ = try failureUnlessGone { try window.setFrame(target.visibleBounds) } }
                     attempts += 1
-                    filled = try await ConditionPoller.waitUntil(timeout: maximizeAttemptTimeout) {
+                    filled = try await poller.waitUntil(timeout: maximizeAttemptTimeout) {
                         try frame().map { ScreenGeometry.approximatelyEqual($0, target.visibleBounds) } ?? false
                     }
                 }
@@ -193,22 +216,21 @@ public struct WindowPlacer {
             var activationFailures = 0
             attempts = 0
             while !entered && attempts <= fullscreenRetryBackoff.count {
-                if attempts > 0 { try await Task.sleep(for: fullscreenRetryBackoff[attempts - 1]) }
+                if attempts > 0 { try await poller.sleep(for: fullscreenRetryBackoff[attempts - 1]) }
                 attempts += 1
-                if !app.activate() { activationFailures += 1 }
+                if !applicationLocator.activate(processIdentifier: pid) { activationFailures += 1 }
                 _ = try failureUnlessGone { try window.raise() }
                 if try isFullScreen() != true { _ = try failureUnlessGone { try window.setFullScreen(true) } }
                 // The attribute flips at once; the fullscreen Space is really showing once the menu bar status items
                 // and other apps' windows are gone from the target display, steadily.
-                entered = try await ConditionPoller.waitUntil(
+                entered = try await poller.waitUntil(
                     timeout: fullscreenTransitionTimeout, holdingFor: settleTime
                 ) {
                     guard try isFullScreen() == true, try isOnTarget(),
                         try frame().map({ ScreenGeometry.isFullscreenFrame($0, displayBounds: target.bounds) }) ?? false
                     else { return false }
-                    let counts = FullscreenSpaceSignals.onScreenWindowCounts(
-                        on: target, excludingPID: app.processIdentifier)
-                    return counts.statusItems == 0 && counts.otherAppWindows == 0
+                    let onTarget = counts(on: target)
+                    return onTarget.statusItems == 0 && onTarget.otherAppWindows == 0
                 }
             }
             let activationDetail = activationFailures > 0 ? "activate failed ×\(activationFailures) " : ""
