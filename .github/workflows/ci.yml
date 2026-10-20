@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check formatting
+        run: swift format lint --strict --recursive .
+
+  app:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Build and test the app
+        run: |
+          xcodebuild -project macos-spaces-auto-layout.xcodeproj \
+            -scheme macos-spaces-auto-layout \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY=- \
+            build test
+
+  spike:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test the spike
+        working-directory: spike
+        run: swift build && swift test
