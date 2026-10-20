@@ -97,7 +97,7 @@ Run them with `xcodebuild … test` (see the [README](../README.md#build-run-tes
 
 ## Not built yet
 
-| Goal | Today | Needed (see [roadmap](research/04-recommended-architecture.md#roadmap)) |
+| Goal | Today | Needed (see [roadmap](roadmap.md)) |
 |---|---|---|
 | Setups are real desk arrangements | Generic "Display N" columns | Display fingerprints captured from the connected hardware (UUIDs) |
 | Apps go fullscreen or maximized on their display | Apps are only listed | Window engine using the Accessibility API, with a mode per app |

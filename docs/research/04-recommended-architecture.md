@@ -118,6 +118,8 @@ Key design rules (where Hammerspoon-style scripts with fixed delays fall short):
 
 ## Roadmap
 
+The phases as first recommended. The current plan is [roadmap.md](../roadmap.md) and its GitHub milestones.
+
 **Phase 0: Spike (1–2 days). Go/no-go for native fullscreen**
 - Build a small Swift command-line tool or test target with no UI.
   - List displays with their UUIDs.
@@ -146,6 +148,9 @@ Key design rules (where Hammerspoon-style scripts with fixed delays fall short):
 - Only if users ask for it, and following how yabai 7.1.25 does SIP-on window moves.
 
 ## Open questions for the product owner
+
+These are tracked in [issue #5](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/5). Each answer goes into the doc it affects.
+
 1. Is **Maximized** acceptable as the default, with native fullscreen opt-in? (This affects how much depends on the spike.)
 2. Should the app **launch** missing apps, or only arrange apps that are already open?
 3. Should setups apply **automatically** on display change, or ask first ("Switch to Home desk?")?
