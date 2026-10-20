@@ -19,6 +19,12 @@ struct SetupTests {
         #expect(Setup(name: "Test", displays: displays).symbolName == expected)
     }
 
+    @Test(arguments: [(1, "1 Display"), (2, "2 Displays"), (3, "3 Displays")])
+    func displayCountLabelPluralizes(count: Int, expected: String) {
+        let displays = (0..<count).map { SetupDisplay(name: "Display \($0)", apps: []) }
+        #expect(Setup(name: "Test", displays: displays).displayCountLabel == expected)
+    }
+
     @Test func defaultsHaveOneTwoAndThreeDisplays() {
         #expect(Setup.defaults.map(\.displays.count) == [1, 2, 3])
         #expect(Setup.defaults.allSatisfy { $0.displays.allSatisfy(\.apps.isEmpty) })

@@ -20,12 +20,13 @@ MacosSpacesAutoLayoutApp ──owns──▶ SetupStore ──reads/writes──
 | Path | Responsibility |
 |---|---|
 | `MacosSpacesAutoLayoutApp.swift` | `@main`. Creates the `SetupStore` and the "Setups" window |
-| `Models/Setup.swift` | Value types `Setup`, `SetupDisplay`, `AppPlacement`, the default setups, and `symbolName` |
-| `Models/AppPlacement+Bundle.swift` | `AppPlacement(appURL:)`: reads the name and bundle identifier from an `.app`'s Info.plist |
+| `AppIdentity.swift` | The app's bundle identifier, shared by the storage folder and the logging subsystem |
+| `Models/Setup.swift` | Value types `Setup`, `SetupDisplay`, `AppPlacement`, the default setups, `symbolName` and `displayCountLabel` |
+| `Models/AppPlacement+Bundle.swift` | `AppPlacement(appURL:)`: reads the bundle identifier and the (localized) name from an `.app` bundle |
 | `Store/SetupStore.swift` | `@Observable` list of setups. `update(_:)` replaces a setup by id and saves |
-| `Store/SetupFileStorage.swift` | Reads and writes `[Setup]` as JSON at a file URL. `.default` is the real location; `.preview` is a temp file for SwiftUI previews |
+| `Store/SetupFileStorage.swift` | Reads and writes `[Setup]` as JSON at a file URL, and moves unreadable files aside. `.default` is the real location; `.preview` is a temp file for SwiftUI previews |
 | `Views/SetupsListView.swift` | The setups list: one row per setup with its icon, name, display count and Edit button |
-| `Views/SetupEditorView.swift` | Editor sheet: name field, one column per display with its apps, Add App picker, Cancel/Save |
+| `Views/SetupEditorView.swift` | Editor sheet: name field, one column per display with its apps, Add App picker (with an alert for apps that have no bundle identifier), Cancel/Save |
 
 ## Data model
 
@@ -37,7 +38,7 @@ struct AppPlacement  { id: UUID; bundleId: String; name: String }
 
 - All three are `Codable`, `Hashable` and `Sendable` value types.
 - They are `nonisolated`, so code off the main actor (such as the future window engine) can use them.
-- `bundleId` is required. It's the stable key for finding and launching an app. The Add App picker ignores bundles that don't have one.
+- `bundleId` is required. It's the stable key for finding and launching an app. The Add App picker shows an alert and adds nothing when a bundle doesn't have one.
 - Displays are generic placeholders ("Display 1", "Display 2", …). They aren't tied to physical monitors yet.
 
 ### Storage
@@ -65,7 +66,7 @@ struct AppPlacement  { id: UUID; bundleId: String; name: String }
 | Situation | Behaviour |
 |---|---|
 | No file yet | The store starts with `Setup.defaults` (1, 2 and 3 displays). Nothing is written until the first save |
-| File can't be read or decoded | The store logs an error (`os.Logger`, subsystem `macos-spaces-auto-layout`) and falls back to the defaults. The next save overwrites the file |
+| File can't be read or decoded | The store logs an error (`os.Logger`, subsystem = bundle identifier), renames the file to `setups.corrupt-<UTC timestamp>.json` next to it, and starts from the defaults. The user's data is kept in that file |
 | Any `update(_:)` | The whole list is written atomically |
 
 ## Editing flow
@@ -86,9 +87,11 @@ struct AppPlacement  { id: UUID; bundleId: String; name: String }
 
 | Suite | Covers |
 |---|---|
-| `SetupTests` | `symbolName`, the defaults, JSON round trip, `bundleId` required |
-| `SetupStoreTests` | Default seeding, saving and reloading, ignoring unknown ids, corrupt-file fallback. Each test uses its own temp file |
-| `AppPlacementBundleTests` | Name priority (`CFBundleDisplayName` → `CFBundleName` → file name), nil without a bundle id or Info.plist |
+| `SetupTests` | `symbolName`, `displayCountLabel`, the defaults, JSON round trip, `bundleId` required |
+| `SetupStoreTests` | Default seeding, saving and reloading, ignoring unknown ids, corrupt-file fallback and backup naming |
+| `AppPlacementBundleTests` | Name priority (localized `CFBundleDisplayName` → `CFBundleDisplayName` → `CFBundleName` → file name), nil without a bundle id or Info.plist |
+
+Each test suite works in its own temporary folder and deletes it when the suite instance is released.
 
 Run them with `xcodebuild … test` (see the [README](../README.md#build-run-test)) or ⌘U in Xcode.
 

@@ -19,6 +19,11 @@ nonisolated struct Setup: Codable, Identifiable, Hashable, Sendable {
         default: "rectangle.split.3x1"
         }
     }
+
+    /// "1 Display", "2 Displays", …
+    var displayCountLabel: String {
+        "\(displays.count) Display\(displays.count == 1 ? "" : "s")"
+    }
 }
 
 /// One display in a setup. The first display in `Setup.displays` is the main one.

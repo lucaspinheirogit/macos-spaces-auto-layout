@@ -28,7 +28,7 @@ struct SetupEditorView: View {
                         .font(.headline)
                         .multilineTextAlignment(.center)
                         .textFieldStyle(.roundedBorder)
-                    Text(displayCountLabel(draft.displays.count))
+                    Text(draft.displayCountLabel)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
@@ -150,8 +150,21 @@ struct DisplayColumnView: View {
                 completion(nil)
                 return
             }
-            completion(AppPlacement(appURL: url))
+            guard let app = AppPlacement(appURL: url) else {
+                showMissingBundleIdAlert(for: url)
+                completion(nil)
+                return
+            }
+            completion(app)
         }
+    }
+
+    private func showMissingBundleIdAlert(for url: URL) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Can't add \(url.deletingPathExtension().lastPathComponent)"
+        alert.informativeText = "This app has no bundle identifier, so it can't be recognized later."
+        alert.runModal()
     }
 }
 

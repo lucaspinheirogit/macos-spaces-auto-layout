@@ -6,18 +6,17 @@
 import Foundation
 
 extension AppPlacement {
-    /// Reads the name and bundle identifier from an `.app` bundle's Info.plist.
+    /// Reads the name and bundle identifier from an `.app` bundle.
+    /// The name prefers the localized `CFBundleDisplayName`, then `CFBundleName`, then the file name.
     /// Returns nil when the bundle has no `CFBundleIdentifier`.
     nonisolated init?(appURL: URL) {
-        let plistURL = appURL.appendingPathComponent("Contents/Info.plist")
-        guard
-            let data = try? Data(contentsOf: plistURL),
-            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-            let bundleId = plist["CFBundleIdentifier"] as? String
-        else { return nil }
+        guard let bundle = Bundle(url: appURL), let bundleId = bundle.bundleIdentifier else { return nil }
 
-        let name = plist["CFBundleDisplayName"] as? String
-            ?? plist["CFBundleName"] as? String
+        func value(_ key: String) -> String? {
+            bundle.localizedInfoDictionary?[key] as? String ?? bundle.infoDictionary?[key] as? String
+        }
+        let name = value("CFBundleDisplayName")
+            ?? value("CFBundleName")
             ?? appURL.deletingPathExtension().lastPathComponent
         self.init(bundleId: bundleId, name: name)
     }

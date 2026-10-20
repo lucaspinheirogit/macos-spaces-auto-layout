@@ -13,7 +13,7 @@ final class SetupStore {
     private(set) var setups: [Setup]
 
     @ObservationIgnored private let storage: SetupFileStorage
-    @ObservationIgnored private let logger = Logger(subsystem: "macos-spaces-auto-layout", category: "SetupStore")
+    @ObservationIgnored private let logger = Logger(subsystem: AppIdentity.bundleIdentifier, category: "SetupStore")
 
     init(storage: SetupFileStorage = .default) {
         self.storage = storage
@@ -22,6 +22,13 @@ final class SetupStore {
         } catch {
             logger.error("Could not read \(storage.fileURL.path, privacy: .public): \(error)")
             setups = Setup.defaults
+            // Keep the unreadable file so saving the defaults doesn't destroy the user's data.
+            do {
+                let backupURL = try storage.moveAsideUnreadableFile()
+                logger.notice("Moved unreadable setups file to \(backupURL.path, privacy: .public)")
+            } catch {
+                logger.error("Could not move unreadable setups file aside: \(error)")
+            }
         }
     }
 

@@ -12,17 +12,16 @@ nonisolated struct SetupFileStorage: Sendable {
     /// `~/Library/Application Support/<bundle id>/setups.json`
     static var `default`: SetupFileStorage {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let folder = Bundle.main.bundleIdentifier ?? "macos-spaces-auto-layout"
-        return SetupFileStorage(fileURL: support.appendingPathComponent(folder).appendingPathComponent("setups.json"))
+        return SetupFileStorage(fileURL: support
+            .appendingPathComponent(AppIdentity.bundleIdentifier)
+            .appendingPathComponent("setups.json"))
     }
 
-    #if DEBUG
     /// A throwaway file for SwiftUI previews, so they never touch the real data.
     static var preview: SetupFileStorage {
         SetupFileStorage(fileURL: FileManager.default.temporaryDirectory
             .appendingPathComponent("setups-preview-\(UUID().uuidString).json"))
     }
-    #endif
 
     /// Returns nil when no file has been saved yet.
     func load() throws -> [Setup]? {
@@ -40,5 +39,17 @@ nonisolated struct SetupFileStorage: Sendable {
             withIntermediateDirectories: true
         )
         try data.write(to: fileURL, options: .atomic)
+    }
+
+    /// Renames an unreadable file to `setups.corrupt-<timestamp>.json` so the next save can't overwrite it.
+    /// Returns the new location.
+    func moveAsideUnreadableFile(now: Date = .now) throws -> URL {
+        let timestamp = now.ISO8601Format(.iso8601.year().month().day().dateSeparator(.dash)
+            .time(includingFractionalSeconds: false).timeSeparator(.omitted).timeZone(separator: .omitted))
+        let name = fileURL.deletingPathExtension().lastPathComponent
+        let backupURL = fileURL.deletingLastPathComponent()
+            .appendingPathComponent("\(name).corrupt-\(timestamp).\(fileURL.pathExtension)")
+        try FileManager.default.moveItem(at: fileURL, to: backupURL)
+        return backupURL
     }
 }

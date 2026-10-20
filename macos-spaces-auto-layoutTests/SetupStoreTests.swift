@@ -8,10 +8,13 @@ import Testing
 @testable import macos_spaces_auto_layout
 
 @MainActor
-struct SetupStoreTests {
-    private let storage = SetupFileStorage(fileURL: FileManager.default.temporaryDirectory
-        .appendingPathComponent(UUID().uuidString)
-        .appendingPathComponent("setups.json"))
+final class SetupStoreTests {
+    private let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    private var storage: SetupFileStorage { SetupFileStorage(fileURL: directory.appendingPathComponent("setups.json")) }
+
+    deinit {
+        try? FileManager.default.removeItem(at: directory)
+    }
 
     @Test func seedsDefaultsWhenNoFileExists() {
         let store = SetupStore(storage: storage)
@@ -38,14 +41,28 @@ struct SetupStoreTests {
         #expect(!FileManager.default.fileExists(atPath: storage.fileURL.path))
     }
 
-    @Test func fallsBackToDefaultsWhenFileIsCorrupt() throws {
-        try FileManager.default.createDirectory(
-            at: storage.fileURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+    @Test func fallsBackToDefaultsAndKeepsCorruptFile() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try Data("not json".utf8).write(to: storage.fileURL)
 
         let store = SetupStore(storage: storage)
         #expect(store.setups == Setup.defaults)
+
+        // The unreadable file is moved aside, so saving the defaults can't overwrite it.
+        #expect(!FileManager.default.fileExists(atPath: storage.fileURL.path))
+        let backups = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+            .filter { $0.hasPrefix("setups.corrupt-") && $0.hasSuffix(".json") }
+        #expect(backups.count == 1)
+        let backupData = try Data(contentsOf: directory.appendingPathComponent(try #require(backups.first)))
+        #expect(backupData == Data("not json".utf8))
+    }
+
+    @Test func backupNameIncludesTimestamp() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data("x".utf8).write(to: storage.fileURL)
+
+        let date = try Date("2026-10-20T17:30:05Z", strategy: .iso8601)
+        let backupURL = try storage.moveAsideUnreadableFile(now: date)
+        #expect(backupURL.lastPathComponent == "setups.corrupt-2026-10-20T173005Z.json")
     }
 }

@@ -52,7 +52,7 @@ struct SetupRowView: View {
                 Text(setup.name)
                     .font(.body)
                     .fontWeight(.medium)
-                Text(displayCountLabel(setup.displays.count))
+                Text(setup.displayCountLabel)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -75,10 +75,6 @@ struct SetupRowView: View {
             SetupEditorView(setup: setup, store: store)
         }
     }
-}
-
-func displayCountLabel(_ count: Int) -> String {
-    "\(count) Display\(count == 1 ? "" : "s")"
 }
 
 #Preview {
