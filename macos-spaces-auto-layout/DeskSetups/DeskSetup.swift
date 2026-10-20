@@ -1,13 +1,13 @@
 import Foundation
 
 /// A physical desk arrangement (e.g. "MacBook + 2 monitors") and the apps placed on each display.
-nonisolated struct Setup: Codable, Identifiable, Hashable, Sendable {
+nonisolated struct DeskSetup: Codable, Identifiable, Hashable, Sendable {
     var id = UUID()
     var name: String
-    var displays: [SetupDisplay]
+    var displays: [DeskSetupDisplay]
 
     /// SF Symbol shown next to the setup, based on how many displays it has.
-    var symbolName: String {
+    var displayCountSymbolName: String {
         switch displays.count {
         case ...1: "rectangle"
         case 2: "rectangle.split.2x1"
@@ -21,8 +21,8 @@ nonisolated struct Setup: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
-/// One display in a setup. The first display in `Setup.displays` is the main one.
-nonisolated struct SetupDisplay: Codable, Identifiable, Hashable, Sendable {
+/// One display in a setup. The first display in `DeskSetup.displays` is the main one.
+nonisolated struct DeskSetupDisplay: Codable, Identifiable, Hashable, Sendable {
     var id = UUID()
     var name: String
     var apps: [AppPlacement]
@@ -35,15 +35,15 @@ nonisolated struct AppPlacement: Codable, Identifiable, Hashable, Sendable {
     var name: String
 }
 
-extension Setup {
+extension DeskSetup {
     /// Setups shown on first launch.
-    nonisolated static let defaults: [Setup] = [
-        Setup(name: "Single Display", displays: makeDisplays(count: 1)),
-        Setup(name: "Dual Display", displays: makeDisplays(count: 2)),
-        Setup(name: "Triple Display", displays: makeDisplays(count: 3)),
+    nonisolated static let firstLaunchSetups: [DeskSetup] = [
+        DeskSetup(name: "Single Display", displays: makeDisplays(count: 1)),
+        DeskSetup(name: "Dual Display", displays: makeDisplays(count: 2)),
+        DeskSetup(name: "Triple Display", displays: makeDisplays(count: 3)),
     ]
 
-    private nonisolated static func makeDisplays(count: Int) -> [SetupDisplay] {
-        (1...count).map { SetupDisplay(name: "Display \($0)", apps: []) }
+    private nonisolated static func makeDisplays(count: Int) -> [DeskSetupDisplay] {
+        (1...count).map { DeskSetupDisplay(name: "Display \($0)", apps: []) }
     }
 }

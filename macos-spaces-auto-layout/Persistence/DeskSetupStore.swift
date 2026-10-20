@@ -4,20 +4,20 @@ import Observation
 
 /// Holds the user's setups and saves every change to disk.
 @Observable
-final class SetupStore {
-    private(set) var setups: [Setup]
+final class DeskSetupStore {
+    private(set) var setups: [DeskSetup]
 
-    @ObservationIgnored private let storage: SetupFileStorage
-    @ObservationIgnored private let logger = Logger(subsystem: AppIdentity.bundleIdentifier, category: "SetupStore")
+    @ObservationIgnored private let storage: DeskSetupFileStorage
+    @ObservationIgnored private let logger = Logger(subsystem: AppIdentity.bundleIdentifier, category: "DeskSetupStore")
 
-    init(storage: SetupFileStorage = .default) {
+    init(storage: DeskSetupFileStorage = .default) {
         self.storage = storage
         do {
-            setups = try storage.load() ?? Setup.defaults
+            setups = try storage.load() ?? DeskSetup.firstLaunchSetups
         } catch {
             logger.error("Could not read \(storage.fileURL.path, privacy: .public): \(error)")
-            setups = Setup.defaults
-            // Keep the unreadable file so saving the defaults doesn't destroy the user's data.
+            setups = DeskSetup.firstLaunchSetups
+            // Keep the unreadable file so saving the first-launch setups doesn't destroy the user's data.
             do {
                 let backupURL = try storage.moveAsideUnreadableFile()
                 logger.notice("Moved unreadable setups file to \(backupURL.path, privacy: .public)")
@@ -28,7 +28,7 @@ final class SetupStore {
     }
 
     /// Replaces the setup with the same id and saves. Unknown ids are ignored.
-    func update(_ setup: Setup) {
+    func update(_ setup: DeskSetup) {
         guard let index = setups.firstIndex(where: { $0.id == setup.id }) else { return }
         setups[index] = setup
         save()

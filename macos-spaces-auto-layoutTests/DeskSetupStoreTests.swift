@@ -4,47 +4,49 @@ import Testing
 @testable import macos_spaces_auto_layout
 
 @MainActor
-final class SetupStoreTests {
+final class DeskSetupStoreTests {
     private let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    private var storage: SetupFileStorage { SetupFileStorage(fileURL: directory.appendingPathComponent("setups.json")) }
+    private var storage: DeskSetupFileStorage {
+        DeskSetupFileStorage(fileURL: directory.appendingPathComponent("setups.json"))
+    }
 
     deinit {
         try? FileManager.default.removeItem(at: directory)
     }
 
-    @Test func seedsDefaultsWhenNoFileExists() {
-        let store = SetupStore(storage: storage)
-        #expect(store.setups == Setup.defaults)
+    @Test func seedsFirstLaunchSetupsWhenNoFileExists() {
+        let store = DeskSetupStore(storage: storage)
+        #expect(store.setups == DeskSetup.firstLaunchSetups)
     }
 
     @Test func updatePersistsAcrossStores() throws {
-        let store = SetupStore(storage: storage)
+        let store = DeskSetupStore(storage: storage)
         var setup = store.setups[1]
         setup.name = "Home desk"
         setup.displays[0].apps.append(AppPlacement(bundleId: "com.apple.Safari", name: "Safari"))
         store.update(setup)
 
         #expect(store.setups[1] == setup)
-        let reloaded = SetupStore(storage: storage)
+        let reloaded = DeskSetupStore(storage: storage)
         #expect(reloaded.setups == store.setups)
         #expect(try storage.load() == store.setups)
     }
 
     @Test func ignoresUpdatesForUnknownIds() {
-        let store = SetupStore(storage: storage)
-        store.update(Setup(name: "Stranger", displays: []))
-        #expect(store.setups == Setup.defaults)
+        let store = DeskSetupStore(storage: storage)
+        store.update(DeskSetup(name: "Stranger", displays: []))
+        #expect(store.setups == DeskSetup.firstLaunchSetups)
         #expect(!FileManager.default.fileExists(atPath: storage.fileURL.path))
     }
 
-    @Test func fallsBackToDefaultsAndKeepsCorruptFile() throws {
+    @Test func fallsBackToFirstLaunchSetupsAndKeepsCorruptFile() throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try Data("not json".utf8).write(to: storage.fileURL)
 
-        let store = SetupStore(storage: storage)
-        #expect(store.setups == Setup.defaults)
+        let store = DeskSetupStore(storage: storage)
+        #expect(store.setups == DeskSetup.firstLaunchSetups)
 
-        // The unreadable file is moved aside, so saving the defaults can't overwrite it.
+        // The unreadable file is moved aside, so saving the first-launch setups can't overwrite it.
         #expect(!FileManager.default.fileExists(atPath: storage.fileURL.path))
         let backups = try FileManager.default.contentsOfDirectory(atPath: directory.path)
             .filter { $0.hasPrefix("setups.corrupt-") && $0.hasSuffix(".json") }

@@ -1,13 +1,13 @@
 import Foundation
 
 /// Reads and writes setups as JSON at a fixed file URL.
-nonisolated struct SetupFileStorage: Sendable {
+nonisolated struct DeskSetupFileStorage: Sendable {
     let fileURL: URL
 
     /// `~/Library/Application Support/<bundle id>/setups.json`
-    static var `default`: SetupFileStorage {
+    static var `default`: DeskSetupFileStorage {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return SetupFileStorage(
+        return DeskSetupFileStorage(
             fileURL:
                 support
                 .appendingPathComponent(AppIdentity.bundleIdentifier)
@@ -15,20 +15,20 @@ nonisolated struct SetupFileStorage: Sendable {
     }
 
     /// A throwaway file for SwiftUI previews, so they never touch the real data.
-    static var preview: SetupFileStorage {
-        SetupFileStorage(
+    static var preview: DeskSetupFileStorage {
+        DeskSetupFileStorage(
             fileURL: FileManager.default.temporaryDirectory
                 .appendingPathComponent("setups-preview-\(UUID().uuidString).json"))
     }
 
     /// Returns nil when no file has been saved yet.
-    func load() throws -> [Setup]? {
+    func load() throws -> [DeskSetup]? {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
         let data = try Data(contentsOf: fileURL)
-        return try JSONDecoder().decode([Setup].self, from: data)
+        return try JSONDecoder().decode([DeskSetup].self, from: data)
     }
 
-    func save(_ setups: [Setup]) throws {
+    func save(_ setups: [DeskSetup]) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(setups)

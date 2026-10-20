@@ -2,11 +2,11 @@ import SwiftUI
 
 @main
 struct MacosSpacesAutoLayoutApp: App {
-    @State private var store = SetupStore()
+    @State private var store = DeskSetupStore()
 
     var body: some Scene {
         Window("Setups", id: "main") {
-            SetupsListView(store: store)
+            DeskSetupListView(store: store)
         }
         .windowResizability(.contentSize)
     }
