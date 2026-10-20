@@ -10,7 +10,7 @@ The app is currently a **setup editor**:
 - You can add apps to each display of a setup.
 - Everything is saved to disk.
 
-The window engine that actually moves apps between displays isn't built yet. See [docs/architecture.md](docs/architecture.md#not-built-yet) for what's missing and [docs/research/](docs/research/README.md) for the feasibility research and roadmap.
+The window engine that actually moves apps between displays isn't built yet. See [docs/architecture.md](docs/architecture.md#not-built-yet) for what's missing, [docs/roadmap.md](docs/roadmap.md) for what's being built next, and [docs/research/](docs/research/README.md) for the feasibility research.
 
 ## Requirements
 
@@ -40,7 +40,8 @@ macos-spaces-auto-layoutTests/     Unit tests (Swift Testing)
 spike/                             Fullscreen spike: WindowKit library + CLI (see spike/README.md)
 docs/
   architecture.md                  How the code is organized
-  research/                        Feasibility research and recommended roadmap
+  roadmap.md                       Phases and how work is tracked (GitHub Issues + milestones)
+  research/                        Feasibility research and recommended architecture
   design-1.png, design-2.png       UI mockups
 ```
 
