@@ -6,9 +6,12 @@ The words this project uses, what each one means, and the type that holds it. Wh
 
 | Term | Meaning | Type |
 |---|---|---|
-| **Setup** | One desk arrangement: a name and the displays it expects, each with the apps that go on it | `Setup` (app) |
-| **Setup display** | A display slot in a setup ("Display 1", "Display 2"…). The first one is shown as **MAIN**. It isn't tied to a physical monitor yet | `SetupDisplay` (app) |
-| **App placement** | One app assigned to a setup display, identified by its bundle identifier | `AppPlacement` (app) |
+| **Setup** | One desk arrangement: a name and the displays it expects, each with the apps that go on it. Called a desk setup in code | `DeskSetup` (app) |
+| **Setup display** | A display slot in a setup ("Display 1", "Display 2"…). The first one is shown as **MAIN**. It isn't tied to a physical monitor yet | `DeskSetupDisplay` (app) |
+| **App placement** | One app assigned to a setup display, identified by its bundle identifier. An app is in a setup at most once | `AppPlacement` (app) |
+| **First-launch setups** | The three setups (1, 2 and 3 displays) shown when there's no saved file. Their ids are fixed | `DeskSetup.firstLaunchSetups` (app) |
+| **Schema version** | The format version stored in `setups.json`. A file from a newer version loads read-only | `DeskSetupFile.schemaVersion` (app) |
+| **Saving blocked** | The store refuses to save because that could destroy a file it couldn't load. The list shows a banner | `DeskSetupStore.savingBlockedReason` (app) |
 | **Maximized** | The window fills the display's visible area (its bounds minus the menu bar and Dock), like Sequoia's *Fill*. It isn't the green button's zoom | `PlacementMode.maximized` (spike) |
 | **Fullscreen** | The window is in macOS native fullscreen, in its own Space on that display, set through the `AXFullScreen` attribute. It isn't *Full Screen Tile* | `PlacementMode.fullscreen` (spike) |
 | **Apply** | Arrange a setup's apps on the connected displays | Not built yet |

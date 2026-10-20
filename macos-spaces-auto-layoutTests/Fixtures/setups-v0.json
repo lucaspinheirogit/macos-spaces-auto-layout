@@ -1,0 +1,25 @@
+[
+  {
+    "displays" : [
+      {
+        "apps" : [
+          {
+            "bundleId" : "com.apple.Safari",
+            "id" : "6F1C2D4E-1111-4A6B-9C0D-000000000001",
+            "name" : "Safari"
+          }
+        ],
+        "id" : "0B7E5A21-2222-4C3D-8E9F-000000000002",
+        "name" : "Display 1"
+      },
+      {
+        "apps" : [
+        ],
+        "id" : "0B7E5A21-2222-4C3D-8E9F-000000000003",
+        "name" : "Display 2"
+      }
+    ],
+    "id" : "A41D7C88-3333-4E5F-A1B2-000000000004",
+    "name" : "Home desk"
+  }
+]

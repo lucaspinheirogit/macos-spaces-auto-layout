@@ -7,7 +7,7 @@ A macOS app for people who move between desks. You define **setups** (for exampl
 The app is currently a **setup editor**:
 
 - It lists your setups and lets you rename them.
-- You can add apps to each display of a setup.
+- You can add apps to each display of a setup. An app can be on only one display of a setup.
 - Everything is saved to disk.
 
 The window engine that actually moves apps between displays isn't built yet. See [docs/architecture.md](docs/architecture.md#not-built-yet) for what's missing, [docs/roadmap.md](docs/roadmap.md) for what's being built next, and [docs/research/](docs/research/README.md) for the feasibility research.
@@ -25,11 +25,11 @@ Open `macos-spaces-auto-layout.xcodeproj` in Xcode and run the `macos-spaces-aut
 
 ```
 macos-spaces-auto-layout/          App target
-  MacosSpacesAutoLayoutApp.swift   Entry point, owns the SetupStore
-  Models/                          Setup, SetupDisplay, AppPlacement
-  Store/                           SetupStore (observable) and JSON file storage
-  Views/                           Setups list and setup editor
-macos-spaces-auto-layoutTests/     Unit tests (Swift Testing)
+  MacosSpacesAutoLayoutApp.swift   Entry point, owns the DeskSetupStore
+  DeskSetups/                      DeskSetup, DeskSetupDisplay, AppPlacement, the editor model
+  Persistence/                     DeskSetupStore (observable) and the versioned JSON file
+  Views/                           Setups list, setup editor and their parts
+macos-spaces-auto-layoutTests/     Unit tests (Swift Testing) and Fixtures/ with saved-file examples
 spike/                             Fullscreen spike: WindowKit library + CLI (see spike/README.md)
 CLAUDE.md                          Instructions for Claude Code sessions, build and test commands
 .github/                           CI workflow and pull request template
@@ -52,4 +52,6 @@ Setups are saved as JSON at:
 ~/Library/Application Support/com.lucaspinheiro.SpacesAutoLayout/setups.json
 ```
 
-To reset the app to its default setups, delete that file.
+- To reset the app to its first-launch setups, delete that file.
+- If the file can't be decoded, it's renamed to `setups.corrupt-<timestamp>.json` next to it and the app starts fresh.
+- If the file can't be read, can't be renamed, or was saved by a newer version of the app, the app shows a warning and doesn't save, so the file is never overwritten.

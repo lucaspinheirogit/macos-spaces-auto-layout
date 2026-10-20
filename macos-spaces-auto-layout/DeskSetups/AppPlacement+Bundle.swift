@@ -7,12 +7,12 @@ extension AppPlacement {
     nonisolated init?(appURL: URL) {
         guard let bundle = Bundle(url: appURL), let bundleId = bundle.bundleIdentifier else { return nil }
 
-        func value(_ key: String) -> String? {
+        func infoPlistString(_ key: String) -> String? {
             bundle.localizedInfoDictionary?[key] as? String ?? bundle.infoDictionary?[key] as? String
         }
         let name =
-            value("CFBundleDisplayName")
-            ?? value("CFBundleName")
+            infoPlistString("CFBundleDisplayName")
+            ?? infoPlistString("CFBundleName")
             ?? appURL.deletingPathExtension().lastPathComponent
         self.init(bundleId: bundleId, name: name)
     }
