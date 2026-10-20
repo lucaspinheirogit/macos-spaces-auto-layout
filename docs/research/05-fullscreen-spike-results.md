@@ -25,7 +25,7 @@
 | Xcode | Native | 10/10 | 10/10 | 893 / 1019 ms | 754 / 802 ms |
 | Figma | Electron | 10/10 | 10/10 | 841 / 878 ms | 718 / 787 ms |
 
-Times cover the whole placement: finding the window, the transition, and a 300 ms check that the result holds.
+Times cover the whole placement: finding the window, the transition, and a 300 ms check that the result holds. They were measured before `move` waited for the window to hold its position (finding 8), which adds about 300 ms to every placement.
 
 ¹ The run took 6.4 s: the first fullscreen attempt timed out after 5 s, and the second succeeded. No other run came near the 5 s timeout. These CSVs predate the attempt count in the `steps` field, so the retry is read from the timing.
 
@@ -33,20 +33,20 @@ Times cover the whole placement: finding the window, the transition, and a 300 m
 
 20 runs per app of `fullscreen-move`, alternating built-in → virtual and virtual → built-in:
 
-| App | Success | Total p50 / p95 | Retries |
+| App | Success | Total p50 / p95 | Runs with a retry |
 |---|---|---|---|
-| Arc | 20/20 | 2578 / 2661 ms | – |
-| Cursor | 20/20 | 1906 / 1983 ms | – |
-| Slack | 20/20 | 1914 / 5864 ms | 2 runs² |
-| Safari | 20/20 | 2002 / 2092 ms | – |
-| Xcode | 20/20 | 2114 / 2181 ms | – |
-| Figma | 20/20 | 1941 / 2048 ms | – |
+| Arc | 20/20 | 2578 / 2661 ms | 0 |
+| Cursor | 20/20 | 1906 / 1983 ms | 0 |
+| Slack | 20/20 | 1914 / 5864 ms | 2² |
+| Safari | 20/20 | 2002 / 2092 ms | 0 |
+| Xcode | 20/20 | 2114 / 2181 ms | 0 |
+| Figma | 20/20 | 1941 / 2048 ms | 0 |
 
-Per step, across all 120 runs (p50 / p95): exit 777 / 1315 ms, move 352 / 487 ms, enter 848 / 921 ms. Both directions take about the same time (p50 2.0 s). The four runs over 3 s were each app's first or second run, where leaving fullscreen took 2.4–2.8 s.
+Per step, across all 120 runs (p50 / p95): exit 777 / 1315 ms, move 352 / 487 ms, enter 848 / 921 ms. Both directions take about the same time (p50 2.0 s). Four runs took over 3 s: Cursor, Slack and Xcode's first runs, where leaving fullscreen took 2.4–2.8 s, and Slack's second run (retries, see ²).
 
 ² Run 1 needed a second move attempt (5.9 s); run 2 needed a second move and a second fullscreen attempt (9.4 s, the slowest run).
 
-On both displays, entering fullscreen only counts once the target display shows no status items, so the signal from finding 2 works on a secondary display. Manual `place` runs showed the status items coming back on the display the window left, in both directions.
+In the bench, entering fullscreen only counted once the target display showed no status items, and that held on both displays. Coming back is shown by manual `place` runs instead: leaving fullscreen on either display, the status items reappeared there (the bench doesn't record this when it works). So the signal from finding 2 works on a secondary display.
 
 Warp wasn't benchmarked, because it was the terminal running the tool. Raw data: [`spike/results/`](../../spike/results/). `bench-2026-10-20T215519Z.csv` shows the failure from finding 8: three runs that timed out because fullscreen came back on the display the window had left.
 
@@ -87,9 +87,10 @@ Each of these changed how the engine has to work:
    - With the terminal in fullscreen, its Space hid the status items on the shared display.
    - `Placement` activates the target app and raises its window before each fullscreen attempt. The engine must also wait until that window is on screen before judging the result (not built yet).
 
-8. **Right after leaving fullscreen, a move can be undone.**
-   - Just after the exit, macOS can still put the window back where it was on the display it left.
-   - The frame set by `move` reads back at once, so a check that trusts the first reading passes, and fullscreen is then entered on the old display. Without a fix, every cross-display move failed this way.
+8. **Right after leaving fullscreen, entering it again too soon lands on the old display.**
+   - The frame set by `move` reads back on the target at once (1–17 ms). Entering fullscreen straight after put the window back into fullscreen on the display it had left, in every cross-display run.
+   - Waiting until the window has stayed on the target for 300 ms fixes it: every move then passed on its first attempt (about 350 ms) and entered fullscreen on the right display.
+   - The exact cause is unknown. Because the window never left the target during those 300 ms, it isn't simply macOS moving it back; more likely macOS hadn't yet registered which display the window is on. One manual maximized move right after an exit did need a second attempt, so a move can also fail to stick, which the retry covers.
    - Fix: `move` only counts once the window has stayed on the target for 300 ms, and sets the frame again if it doesn't (up to 3 attempts).
 
 ## What's next
