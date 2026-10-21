@@ -35,10 +35,11 @@ The other apps' Spaces kept their order through all of it.
    - Leaving fullscreen removes the Space; entering again appends a new one. So exit + enter moves any fullscreen app to the end.
    - Apply order for #41: enter (or exit and re-enter) each setup app in setup order, then exit and re-enter each other fullscreen app. Result: Desktop → setup apps → others.
 
-2. **Accessibility doesn't see windows in other Spaces until the app is activated.**
-   - With Warp's Space active, `kAXWindowsAttribute` returned nothing for Slack, Xcode, Arc, Cursor, Beekeeper Studio and Safari, all fullscreen elsewhere. This is the cause of [#37](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/37).
-   - `NSRunningApplication.activate()` switches to the app's Space. Its window then appears in Accessibility with `AXFullScreen` true: after 0.3 s for Cursor, after 0.7 s for Slack, Xcode and Arc (sampled at 0.3, 0.7 and 1.5 s).
-   - So before deciding an app has no window (and reopening it), the engine should activate it and look again for up to about 1.5 s.
+2. **An app's window list doesn't include windows in other Spaces, but its main window does.**
+   - With Warp's Space active, `kAXWindowsAttribute` returned nothing for Slack, Xcode, Arc, Cursor, Beekeeper Studio and Safari, all fullscreen elsewhere.
+   - `kAXMainWindowAttribute` still returned the fullscreen window for Slack, Xcode, Arc, Cursor, Beekeeper Studio and TextEdit, so `WindowPlacer` (which asks for the main window first) found every one in under 50 ms without switching Spaces.
+   - When an app has no main window, the list is all that's left, and it's empty: that's the case behind [#37](https://github.com/lucaspinheirogit/macos-spaces-auto-layout/issues/37). `NSRunningApplication.activate()` switches to the app's Space, and its window then appears in the list with `AXFullScreen` true: after 0.3 s for Cursor, after 0.7 s for Slack, Xcode and Arc (sampled at 0.3, 0.7 and 1.5 s).
+   - So before deciding an app has no window (and reopening it), the engine should activate it and look again.
 
 3. **The public window list sees every fullscreen window, but can't say which ones are fullscreen.**
    - `CGWindowListCopyWindowInfo` with `.optionAll` lists all 9 fullscreen windows (matching the probe's `fs_wid`s), with owner PID, layer 0 and `onscreen=false` for those in other Spaces.

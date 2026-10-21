@@ -14,6 +14,9 @@ public protocol ApplicationLocator {
     func activate(processIdentifier: pid_t) -> Bool
     /// The app's main window if it's a standard window, otherwise its first standard window.
     func mainOrFirstStandardWindow(processIdentifier: pid_t) -> (any ControllableWindow)?
+    /// Whether the app has a normal window that isn't on screen, such as one in another Space. Accessibility usually
+    /// can't see those until the app is brought forward.
+    func hasOffScreenWindow(processIdentifier: pid_t) -> Bool
 }
 
 /// The real `ApplicationLocator`: `NSWorkspace` and `NSRunningApplication` for the app, Accessibility for its window.
@@ -40,6 +43,21 @@ public struct WorkspaceApplicationLocator: ApplicationLocator {
     public func mainOrFirstStandardWindow(processIdentifier: pid_t) -> (any ControllableWindow)? {
         NSRunningApplication(processIdentifier: processIdentifier).flatMap {
             AccessibilityApplication($0).mainOrFirstStandardWindow
+        }
+    }
+
+    public func hasOffScreenWindow(processIdentifier: pid_t) -> Bool {
+        let infos =
+            CGWindowListCopyWindowInfo([.optionAll, .excludeDesktopElements], kCGNullWindowID)
+            as? [[String: Any]] ?? []
+        return infos.contains { info in
+            guard info[kCGWindowOwnerPID as String] as? pid_t == processIdentifier,
+                info[kCGWindowLayer as String] as? Int == 0,
+                info[kCGWindowIsOnscreen as String] as? Bool != true,
+                let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
+                let bounds = CGRect(dictionaryRepresentation: boundsDict)
+            else { return false }
+            return bounds.width > 1 && bounds.height > 1
         }
     }
 }

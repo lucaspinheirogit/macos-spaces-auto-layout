@@ -166,7 +166,7 @@ All rects are in global top-left coordinates (see the [glossary](glossary.md#coo
 | Step | Recorded | Does | Succeeds when |
 |---|---|---|---|
 | `target-display` | Only on failure | Checks the target's `CGDirectDisplayID` is in `among` | |
-| `app` | Always | Finds the running app or launches it in the background, then waits up to 2 s for a standard window. If none appears, reopens the app (like a Dock click; it's brought forward only in fullscreen mode) and waits up to 10 s more | A standard window exists |
+| `app` | Always | Finds the running app or launches it in the background. If Accessibility shows no standard window but the app has an off-screen window (usually in another Space, where Accessibility can't see it), activates the app first, which switches to that Space. Then waits up to 2 s for a standard window. If none appears, reopens the app (like a Dock click; it's brought forward only in fullscreen mode) and waits up to 10 s more | A standard window exists |
 | `unminimize` | If the window is minimized | Sets `kAXMinimizedAttribute` to false | It reads false within 2 s |
 | `already-done` | Fullscreen mode, if it's already done | Skips the rest | The window is fullscreen on the target |
 | `exit-fullscreen` | If the window is fullscreen | Sets `AXFullScreen = false`, then waits up to 2 s for the source display's status items to come back (with an always-hidden menu bar they never do; that only adds a note) | It reads false, and the frame stays the same for 300 ms |
@@ -193,7 +193,7 @@ Failures:
 
 | Protocol | Real implementation | Gives the placer |
 |---|---|---|
-| `ApplicationLocator` | `WorkspaceApplicationLocator` | The running app's process, launch in the background, reopen, activate, and its main or first standard window |
+| `ApplicationLocator` | `WorkspaceApplicationLocator` | The running app's process, launch in the background, reopen, activate, its main or first standard window, and whether it has an off-screen window (`CGWindowListCopyWindowInfo` over all Spaces: a layer-0 window bigger than 1 pt that isn't on screen) |
 | `ControllableWindow` | `AccessibilityWindow` | Frame, fullscreen and minimized state, and the setters, each throwing `AccessibilityError` |
 | `OnScreenWindowListProvider` | `CoreGraphicsWindowList` | The raw on-screen window list (`OnScreenWindowListEntry`), counted by `FullscreenSpaceSignals` |
 | `ConditionPoller(clock:pollInterval:)` | `ContinuousClock`, 50 ms | Elapsed time, waits and backoff pauses |
