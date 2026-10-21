@@ -12,6 +12,10 @@ final class FakeApplicationLocator: ApplicationLocator {
     var window: FakeWindow?
     /// Becomes `window` when the app is reopened, like an app that creates a window on a Dock click.
     var windowCreatedOnReopen: FakeWindow?
+    /// What `hasOffScreenWindow` returns, like an app whose window is in another Space.
+    var hasOffScreenWindow = false
+    /// Becomes `window` when the app is activated, like a window in another Space that Accessibility then sees.
+    var windowShownOnActivation: FakeWindow?
     var activationSucceeds = true
 
     private(set) var launches = 0
@@ -37,10 +41,15 @@ final class FakeApplicationLocator: ApplicationLocator {
 
     func activate(processIdentifier: pid_t) -> Bool {
         activations += 1
+        if activationSucceeds, let shown = windowShownOnActivation { window = shown }
         return activationSucceeds
     }
 
     func mainOrFirstStandardWindow(processIdentifier: pid_t) -> (any ControllableWindow)? {
         window
+    }
+
+    func hasOffScreenWindow(processIdentifier: pid_t) -> Bool {
+        hasOffScreenWindow
     }
 }

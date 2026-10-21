@@ -134,6 +134,35 @@ struct WindowPlacerTests {
         #expect(locator.reopens == [true])
     }
 
+    @Test func activatesAnAppWithAWindowInAnotherSpaceInsteadOfReopening() async throws {
+        locator.window = nil
+        locator.hasOffScreenWindow = true
+        locator.windowShownOnActivation = window
+        locator.windowCreatedOnReopen = FakeWindow(frame: Self.normalFrame, displays: Self.displays)
+        let steps = try await place(.maximized)
+        #expect(steps.allSatisfy { $0.succeeded })
+        #expect(steps[0].diagnosticDetail.hasPrefix("activated; "))
+        #expect(steps[0].elapsedMilliseconds == 0)
+        #expect(locator.reopens.isEmpty)
+        #expect(window.currentFrame == Self.right.visibleBounds)
+    }
+
+    @Test func reopensWhenActivatingShowsNoWindow() async throws {
+        locator.window = nil
+        locator.hasOffScreenWindow = true
+        locator.windowCreatedOnReopen = window
+        let steps = try await place(.maximized)
+        #expect(steps.allSatisfy { $0.succeeded })
+        #expect(steps[0].diagnosticDetail.hasPrefix("activated; reopened; "))
+        #expect(locator.activations == 1 && locator.reopens == [false])
+    }
+
+    @Test func doesNotActivateWhenTheWindowIsAlreadyVisible() async throws {
+        locator.hasOffScreenWindow = true
+        _ = try await place(.maximized)
+        #expect(locator.activations == 0)
+    }
+
     // MARK: - Failures
 
     @Test func failsWhenTheAppIgnoresAXFullScreen() async throws {

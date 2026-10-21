@@ -96,15 +96,22 @@ public struct WindowPlacer {
                     return found != nil
                 }
             }
+            // Accessibility usually only sees windows on the current Space. If the app has a window elsewhere, bring
+            // it forward, which switches to that Space, rather than reopen it and get a second window.
+            var reopenDetail = ""
+            if applicationLocator.mainOrFirstStandardWindow(processIdentifier: pid) == nil,
+                applicationLocator.hasOffScreenWindow(processIdentifier: pid)
+            {
+                reopenDetail = applicationLocator.activate(processIdentifier: pid) ? "activated; " : "activate failed; "
+            }
             // Apps launched in the background, or with all windows closed, often have no window:
             // reopen them (like a Dock click) so they create one. Only fullscreen brings the app forward anyway.
-            var reopenDetail = ""
             if !(try await findWindow(timeout: existingWindowTimeout)) {
                 do {
                     try await applicationLocator.reopen(bundleId: bundleId, activates: mode == .fullscreen)
-                    reopenDetail = "reopened; "
+                    reopenDetail += "reopened; "
                 } catch {
-                    reopenDetail = "reopen failed: \(error); "
+                    reopenDetail += "reopen failed: \(error); "
                 }
                 _ = try await findWindow(timeout: reopenedWindowTimeout)
             }
