@@ -10,6 +10,8 @@ final class FakeWindowList: OnScreenWindowListProvider {
 
     let displays: [ConnectedDisplay]
     var window: FakeWindow?
+    /// Leaves the placed window's fullscreen Space off screen, like a Space that never comes forward.
+    var placedWindowSpaceHidden = false
 
     init(displays: [ConnectedDisplay]) {
         self.displays = displays
@@ -17,7 +19,7 @@ final class FakeWindowList: OnScreenWindowListProvider {
 
     func onScreenWindows() -> [OnScreenWindowListEntry] {
         displays.flatMap { display -> [OnScreenWindowListEntry] in
-            if let window, window.fullScreen, !window.isGone,
+            if let window, window.fullScreen, !window.isGone, !placedWindowSpaceHidden,
                 ScreenGeometry.centerIsInside(window.currentFrame, bounds: display.bounds)
             {
                 return [

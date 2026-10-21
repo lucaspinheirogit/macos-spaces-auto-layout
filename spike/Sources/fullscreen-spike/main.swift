@@ -148,24 +148,30 @@ func trace(_ bundleId: String, useButton: Bool) async throws {
     print(
         "\(useButton ? "Pressing the fullscreen button" : "Setting AXFullScreen=\(target)") on \"\(window.title ?? "")\""
     )
-    print("    ms  attr   status others  frame")
+    print("    ms  attr   status others placed  frame")
     if !app.activate() { print("activate() failed") }
     try? window.raise()
     let start = ContinuousClock.now
-    do {
-        if useButton { try window.pressFullScreenButton() } else { try window.setFullScreen(target) }
-    } catch {
-        print(error)
-    }
-    while ContinuousClock.now - start < .milliseconds(2500) {
+    // Toggle after half a second, so the trace shows the app's Space coming forward first.
+    var toggled = false
+    while ContinuousClock.now - start < .milliseconds(3000) {
+        if !toggled && ContinuousClock.now - start >= .milliseconds(500) {
+            toggled = true
+            print("  -- toggle")
+            do {
+                if useButton { try window.pressFullScreenButton() } else { try window.setFullScreen(target) }
+            } catch {
+                print(error)
+            }
+        }
         let ms = (ContinuousClock.now - start).wholeMilliseconds
         let attr = (try? window.isFullScreen).map(String.init) ?? "?"
         let screen = FullscreenSpaceSignals.onScreenWindowCounts(
             in: CoreGraphicsWindowList().onScreenWindows(), onDisplayWithBounds: display.bounds,
-            excludingProcessIdentifier: app.processIdentifier)
+            placedAppProcessIdentifier: app.processIdentifier)
         print(
             String(format: "%6d", ms), attr.padding(toLength: 6, withPad: " ", startingAt: 0),
-            String(format: "%6d %6d ", screen.statusItems, screen.otherAppWindows),
+            String(format: "%6d %6d %6d ", screen.statusItems, screen.otherAppWindows, screen.placedAppWindows),
             ScreenGeometry.debugFrameDescription(try? window.frame))
         try await Task.sleep(for: .milliseconds(50))
     }

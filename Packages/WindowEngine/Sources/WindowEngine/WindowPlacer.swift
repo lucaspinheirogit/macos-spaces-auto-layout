@@ -23,6 +23,9 @@ public struct WindowPlacer {
     public var moveAttemptTimeout: Duration = .seconds(2)
     /// How long one maximize attempt may take to fill the visible area.
     public var maximizeAttemptTimeout: Duration = .milliseconds(500)
+    /// How long the window's fullscreen Space may take to show after the app is brought forward, before leaving
+    /// fullscreen.
+    public var fullscreenSpaceShowTimeout: Duration = .seconds(1)
     /// How long the desktop (menu bar status items) may take to come back after leaving fullscreen.
     public var desktopReturnTimeout: Duration = .seconds(2)
     /// A "done" signal must hold this long before a step counts as finished.
@@ -132,7 +135,7 @@ public struct WindowPlacer {
             func counts(on display: ConnectedDisplay) -> OnScreenWindowCounts {
                 FullscreenSpaceSignals.onScreenWindowCounts(
                     in: windowList.onScreenWindows(), onDisplayWithBounds: display.bounds,
-                    excludingProcessIdentifier: pid)
+                    placedAppProcessIdentifier: pid)
             }
 
             // 2. A minimized window can't be moved or made fullscreen.
@@ -157,6 +160,14 @@ public struct WindowPlacer {
             if try isFullScreen() == true {
                 begin(.exitFullscreen)
                 let source = try frame().flatMap { ConnectedDisplays.display(containing: $0, in: displays) } ?? target
+                // Show its Space first: leaving fullscreen from a Space that isn't showing leaves the other Space on
+                // screen, so the status items never come back (see finding 6 in research 06). Its window is on
+                // screen about 0.3 s after the app is brought forward; leaving before then doesn't help.
+                let activated = applicationLocator.activate(processIdentifier: pid)
+                _ = try failureUnlessGone { try window.raise() }
+                let spaceShowing = try await poller.waitUntil(timeout: fullscreenSpaceShowTimeout) {
+                    counts(on: source).placedAppWindows > 0
+                }
                 let error = try failureUnlessGone { try window.setFullScreen(false) }
                 let exited = try await poller.waitUntil(timeout: fullscreenTransitionTimeout) {
                     try isFullScreen() == false
@@ -173,11 +184,12 @@ public struct WindowPlacer {
                     ? try await poller.waitForStableValue(
                         stableFor: settleTime, timeout: fullscreenTransitionTimeout, frame) : false
                 let exitDetail =
-                    !exited
-                    ? "still fullscreen (\(error.map(String.init) ?? "no error"))"
-                    : !settled
-                        ? "frame still changing"
-                        : desktopBack ? "" : "status items never reappeared (menu bar hidden?)"
+                    (activated ? "" : "activate failed; ") + (spaceShowing ? "" : "its Space never showed; ")
+                    + (!exited
+                        ? "still fullscreen (\(error.map(String.init) ?? "no error"))"
+                        : !settled
+                            ? "frame still changing"
+                            : desktopBack ? "" : "status items never reappeared (menu bar hidden?)")
                 guard record(exited && settled, exitDetail) else { return steps }
             }
 

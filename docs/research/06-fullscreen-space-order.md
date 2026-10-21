@@ -56,7 +56,8 @@ The other apps' Spaces kept their order through all of it.
 
 6. **Leaving fullscreen doesn't always show the Desktop.**
    - When Safari left fullscreen, macOS showed TextEdit's fullscreen Space instead of the Desktop. The status items stayed hidden, so `exit-fullscreen`'s on-screen check waited its full 2.5 s ("status items never reappeared") before the step counted as done.
-   - With several apps in fullscreen this will be common. The exit check needs a signal that doesn't depend on the Desktop being shown, or the apply will spend 2.5 s on every exit.
+   - Cause: the app's Space wasn't showing when it left fullscreen. That happens whenever the window is found in another Space without switching to it (finding 2). Traced with `fullscreen-spike trace`, leaving fullscreen from the showing Space brought the status items back within about 80 ms.
+   - Activating the app right before leaving wasn't enough (3 of 3 runs still waited the full 2.5 s). Its window shows up on screen about 0.3 s after activating; waiting for that first fixed it: `exit-fullscreen` took 1.1 s in 3 of 3 runs, against 2.4 s before. With the Space already showing, it took 0.7 s with or without the wait.
 
 ## Decision
 
