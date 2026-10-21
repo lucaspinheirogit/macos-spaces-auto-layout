@@ -73,6 +73,13 @@ public struct FullscreenSpaceProgress: Sendable, Equatable {
     /// Zero-based position in the run.
     public let index: Int
     public let total: Int
+
+    public init(bundleId: String, isInSetup: Bool, index: Int, total: Int) {
+        self.bundleId = bundleId
+        self.isInSetup = isInSetup
+        self.index = index
+        self.total = total
+    }
 }
 
 /// What happened to one app in a `FullscreenSpaceSequencer` run.

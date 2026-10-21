@@ -21,36 +21,36 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "macos-spaces-auto-layoutTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B5F00642F7ECF150020E511 /* macos-spaces-auto-layout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "macos-spaces-auto-layout.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "macos-spaces-auto-layoutTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "macos-spaces-auto-layoutTests";
-			sourceTree = "<group>";
-		};
 		1B5F00662F7ECF150020E511 /* macos-spaces-auto-layout */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "macos-spaces-auto-layout";
 			sourceTree = "<group>";
 		};
+		1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "macos-spaces-auto-layoutTests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		1B5F00A52F7ECF150020E511 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		1B5F00612F7ECF150020E511 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				1B5F00B32F7ECF150020E511 /* WindowEngine in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B5F00A52F7ECF150020E511 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,29 +78,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1B5F00A72F7ECF150020E511 /* macos-spaces-auto-layoutTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1B5F00A82F7ECF150020E511 /* Build configuration list for PBXNativeTarget "macos-spaces-auto-layoutTests" */;
-			buildPhases = (
-				1B5F00A42F7ECF150020E511 /* Sources */,
-				1B5F00A52F7ECF150020E511 /* Frameworks */,
-				1B5F00A62F7ECF150020E511 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				1B5F00A32F7ECF150020E511 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */,
-			);
-			name = "macos-spaces-auto-layoutTests";
-			packageProductDependencies = (
-			);
-			productName = "macos-spaces-auto-layoutTests";
-			productReference = 1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 		1B5F00632F7ECF150020E511 /* macos-spaces-auto-layout */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1B5F006F2F7ECF160020E511 /* Build configuration list for PBXNativeTarget "macos-spaces-auto-layout" */;
@@ -123,6 +100,29 @@
 			productName = "macos-spaces-auto-layout";
 			productReference = 1B5F00642F7ECF150020E511 /* macos-spaces-auto-layout.app */;
 			productType = "com.apple.product-type.application";
+		};
+		1B5F00A72F7ECF150020E511 /* macos-spaces-auto-layoutTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B5F00A82F7ECF150020E511 /* Build configuration list for PBXNativeTarget "macos-spaces-auto-layoutTests" */;
+			buildPhases = (
+				1B5F00A42F7ECF150020E511 /* Sources */,
+				1B5F00A52F7ECF150020E511 /* Frameworks */,
+				1B5F00A62F7ECF150020E511 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1B5F00A32F7ECF150020E511 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1B5F00A12F7ECF150020E511 /* macos-spaces-auto-layoutTests */,
+			);
+			name = "macos-spaces-auto-layoutTests";
+			packageProductDependencies = (
+			);
+			productName = "macos-spaces-auto-layoutTests";
+			productReference = 1B5F00A02F7ECF150020E511 /* macos-spaces-auto-layoutTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -167,14 +167,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		1B5F00A62F7ECF150020E511 /* Resources */ = {
+		1B5F00622F7ECF150020E511 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1B5F00622F7ECF150020E511 /* Resources */ = {
+		1B5F00A62F7ECF150020E511 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -184,14 +184,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		1B5F00A42F7ECF150020E511 /* Sources */ = {
+		1B5F00602F7ECF150020E511 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1B5F00602F7ECF150020E511 /* Sources */ = {
+		1B5F00A42F7ECF150020E511 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
