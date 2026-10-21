@@ -59,6 +59,19 @@ The other apps' Spaces kept their order through all of it.
    - Cause: the app's Space wasn't showing when it left fullscreen. That happens whenever the window is found in another Space without switching to it (finding 2). Traced with `fullscreen-spike trace`, leaving fullscreen from the showing Space brought the status items back within about 80 ms.
    - Activating the app right before leaving wasn't enough (3 of 3 runs still waited the full 2.5 s). Its window shows up on screen about 0.3 s after activating; waiting for that first fixed it: `exit-fullscreen` took 1.1 s in 3 of 3 runs, against 2.4 s before. With the Space already showing, it took 0.7 s with or without the wait.
 
+## Full run
+
+`fullscreen-spike arrange com.apple.Safari com.apple.TextEdit` (`FullscreenSpaceSequencer`), with Safari and TextEdit open but not fullscreen and the 6 apps above fullscreen:
+
+| | Spaces |
+|---|---|
+| Before | Desktop, Arc, Warp, Cursor, Cursor, Beekeeper Studio, Xcode, Slack |
+| After | Desktop, Cursor, **Safari, TextEdit**, Warp, Xcode, Cursor, Arc, Beekeeper Studio, Slack |
+
+- All 8 apps succeeded on the first attempt, in 21.1 s: about 1 s per setup app and 2.5–3.5 s per other app (leave, move, enter).
+- Cursor's second fullscreen window kept its Space ahead of the setup's apps (finding 4).
+- The run ended on the last app's Space (Slack), not the first setup app's.
+
 ## Decision
 
 The other fullscreen apps **don't keep their relative order**. Only the setup's apps have a defined order; the others just end up after them, in the order the engine visits them. This keeps the engine on public APIs (finding 5), in line with [04](04-recommended-architecture.md#decision-summary).
