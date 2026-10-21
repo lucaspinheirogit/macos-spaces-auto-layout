@@ -11,6 +11,9 @@ let usage = """
                                                  (--button: press the green button instead of AXFullScreen)
       place <bundleId> [--display N] [--mode fullscreen|maximized]
                                                  Place one app once and print each step
+      fullscreen-apps [--display N]              List the apps with a fullscreen window on a display
+      arrange <bundleId…> [--display N]          Put these apps in fullscreen in this order, other fullscreen
+                                                 apps behind them
       bench [bundleId…] [--runs N]               Repeat placements and write results/<timestamp>.csv
                                                  (default: all test apps, 20 runs each)
     """
@@ -129,6 +132,25 @@ func place(_ bundleId: String, displayIndex: Int, mode: WindowPlacementMode) asy
         app: bundleId, run: 1, scenario: "manual", fromDisplay: nil,
         toDisplay: displayIndex, mode: mode, steps: steps)
     print(report.success ? "OK in \(report.totalMilliseconds) ms" : "FAILED at \(report.failedStep?.rawValue ?? "?")")
+}
+
+/// Arranges one display's fullscreen Spaces: these apps first, in order, then the other fullscreen apps.
+func arrange(_ bundleIds: [String], displayIndex: Int) async throws {
+    requireAccessibility()
+    let displays = connectedDisplays()
+    guard displays.indices.contains(displayIndex) else { fail("No display \(displayIndex). Run `displays`.") }
+    let start = ContinuousClock.now
+    let results = try await FullscreenSpaceSequencer().arrange(
+        setupBundleIds: bundleIds, onDisplay: displays[displayIndex], among: displays,
+        onAppStarted: { progress in
+            print(
+                "[\(progress.index + 1)/\(progress.total)] \(progress.bundleId)\(progress.isInSetup ? "" : " (other)")")
+        },
+        onStep: printStep)
+    let failed = results.filter { !$0.succeeded }.map(\.bundleId)
+    print(
+        "\(failed.isEmpty ? "OK" : "FAILED: \(failed.joined(separator: ", "))") in \((ContinuousClock.now - start).wholeMilliseconds) ms"
+    )
 }
 
 /// Toggles fullscreen once and samples what's observable every 50 ms, to see when the transition really ends.
@@ -339,6 +361,18 @@ func run() async throws {
         guard let mode = WindowPlacementMode(rawValue: option("--mode") ?? "fullscreen") else { fail(usage) }
         guard let bundleId = arguments.first else { fail(usage) }
         try await place(bundleId, displayIndex: displayIndex, mode: mode)
+    case "fullscreen-apps":
+        requireAccessibility()
+        let displays = connectedDisplays()
+        let displayIndex = intOption("--display", default: 0)
+        guard displays.indices.contains(displayIndex) else { fail("No display \(displayIndex). Run `displays`.") }
+        for bundleId in WorkspaceFullscreenAppLocator().bundleIdsOfAppsInFullscreen(on: displays[displayIndex]) {
+            print(bundleId)
+        }
+    case "arrange":
+        let displayIndex = intOption("--display", default: 0)
+        guard !arguments.isEmpty else { fail(usage) }
+        try await arrange(arguments, displayIndex: displayIndex)
     case "bench":
         let runs = intOption("--runs", default: 20)
         guard runs > 0 else { fail("--runs must be at least 1") }
