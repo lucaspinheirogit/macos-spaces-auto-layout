@@ -14,7 +14,7 @@ struct FullscreenSpaceSignalsTests {
 
     private func counts(_ entries: [OnScreenWindowListEntry]) -> OnScreenWindowCounts {
         FullscreenSpaceSignals.onScreenWindowCounts(
-            in: entries, onDisplayWithBounds: display, excludingProcessIdentifier: placedApp,
+            in: entries, onDisplayWithBounds: display, placedAppProcessIdentifier: placedApp,
             statusItemLayer: statusLayer)
     }
 
@@ -24,11 +24,13 @@ struct FullscreenSpaceSignalsTests {
             entry(1, layer: statusLayer, CGRect(x: 1850, y: 0, width: 30, height: 24)),
             entry(99, CGRect(x: 1200, y: 100, width: 400, height: 300)),
         ])
-        #expect(result == OnScreenWindowCounts(statusItems: 2, otherAppWindows: 1))
+        #expect(result == OnScreenWindowCounts(statusItems: 2, otherAppWindows: 1, placedAppWindows: 0))
     }
 
-    @Test func ignoresThePlacedAppsOwnWindows() {
-        #expect(counts([entry(placedApp, display)]) == OnScreenWindowCounts(statusItems: 0, otherAppWindows: 0))
+    @Test func countsThePlacedAppsWindowsSeparately() {
+        #expect(
+            counts([entry(placedApp, display)])
+                == OnScreenWindowCounts(statusItems: 0, otherAppWindows: 0, placedAppWindows: 1))
     }
 
     @Test func ignoresWindowsCenteredOnAnotherDisplay() {
@@ -41,7 +43,7 @@ struct FullscreenSpaceSignalsTests {
             entry(99, CGRect(x: 1200, y: 100, width: 1, height: 1)),
             entry(99, layer: 3, CGRect(x: 1200, y: 100, width: 400, height: 300)),
         ])
-        #expect(result == OnScreenWindowCounts(statusItems: 0, otherAppWindows: 0))
+        #expect(result == OnScreenWindowCounts(statusItems: 0, otherAppWindows: 0, placedAppWindows: 0))
     }
 
     @Test func statusItemLayerIsTheStatusWindowLevel() {

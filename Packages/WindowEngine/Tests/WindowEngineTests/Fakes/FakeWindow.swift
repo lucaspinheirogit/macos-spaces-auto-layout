@@ -27,6 +27,7 @@ final class FakeWindow: ControllableWindow {
     private(set) var setFrameCalls = 0
     private(set) var setFullScreenCalls: [Bool] = []
     private(set) var unminimizeCalls = 0
+    private(set) var raiseCalls = 0
 
     init(frame: CGRect, displays: [ConnectedDisplay], fullScreen: Bool = false) {
         currentFrame = frame
@@ -94,6 +95,7 @@ final class FakeWindow: ControllableWindow {
 
     func raise() throws(AccessibilityError) {
         try checkPresent()
+        raiseCalls += 1
     }
 
     func pressFullScreenButton() throws(AccessibilityError) {

@@ -60,7 +60,8 @@ struct WindowPlacerTests {
         #expect(steps.allSatisfy { $0.succeeded })
         #expect(window.fullScreen && window.currentFrame == Self.right.bounds)
         #expect(window.setFullScreenCalls == [false, true])
-        #expect(locator.activations == 1)
+        // Once to show its Space before leaving fullscreen, once before entering it again.
+        #expect(locator.activations == 2)
     }
 
     @Test func skipsAWindowAlreadyFullscreenOnTheTarget() async throws {
@@ -84,6 +85,14 @@ struct WindowPlacerTests {
         #expect(steps.map(\.step) == [.app, .unminimize, .move, .verifyMaximized])
         #expect(steps.allSatisfy { $0.succeeded })
         #expect(window.unminimizeCalls == 1)
+    }
+
+    @Test func showsItsSpaceBeforeLeavingFullscreen() async throws {
+        makeFullscreen(on: Self.left)
+        let steps = try await place(.maximized)
+        #expect(steps.allSatisfy { $0.succeeded })
+        #expect(locator.activations == 1 && window.raiseCalls == 1)
+        #expect(steps[1].step == .exitFullscreen && steps[1].diagnosticDetail.isEmpty)
     }
 
     // MARK: - Retries
@@ -180,6 +189,17 @@ struct WindowPlacerTests {
         let steps = try await place(.fullscreen)
         #expect(steps.map(\.step) == [.app, .exitFullscreen])
         #expect(!steps[1].succeeded && steps[1].diagnosticDetail.hasPrefix("still fullscreen"))
+    }
+
+    @Test func leavesFullscreenAnywayWhenItsSpaceNeverShows() async throws {
+        makeFullscreen(on: Self.left)
+        windowList.placedWindowSpaceHidden = true
+        let steps = try await place(.maximized)
+        #expect(steps.allSatisfy { $0.succeeded })
+        let exit = steps[1]
+        #expect(exit.step == .exitFullscreen && exit.diagnosticDetail.hasPrefix("its Space never showed; "))
+        // The full wait for the Space, then the status items and the frame each holding for the settle time.
+        #expect(exit.elapsedMilliseconds == 1000 + 300 + 300)
     }
 
     @Test func stopsWhenTheWindowClosesMidStep() async throws {
