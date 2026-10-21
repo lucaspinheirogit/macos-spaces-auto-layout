@@ -57,6 +57,6 @@ The other apps' Spaces kept their order through all of it.
    - When Safari left fullscreen, macOS showed TextEdit's fullscreen Space instead of the Desktop. The status items stayed hidden, so `exit-fullscreen`'s on-screen check waited its full 2.5 s ("status items never reappeared") before the step counted as done.
    - With several apps in fullscreen this will be common. The exit check needs a signal that doesn't depend on the Desktop being shown, or the apply will spend 2.5 s on every exit.
 
-## Open question
+## Decision
 
-Should the other fullscreen apps keep their relative order? Publicly the engine can only move them to the end in its own order (finding 5). Keeping their order needs the private, read-only Space list, against the "no private APIs" decision in [04](04-recommended-architecture.md#decision-summary).
+The other fullscreen apps **don't keep their relative order**. Only the setup's apps have a defined order; the others just end up after them, in the order the engine visits them. This keeps the engine on public APIs (finding 5), in line with [04](04-recommended-architecture.md#decision-summary).
