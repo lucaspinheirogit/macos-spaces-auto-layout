@@ -19,6 +19,8 @@ swift run fullscreen-spike windows com.apple.Safari
 swift run fullscreen-spike trace com.apple.Safari
 swift run fullscreen-spike place com.apple.Safari --display 0 --mode fullscreen
 swift run fullscreen-spike place com.apple.Safari --display 0 --mode maximized
+swift run fullscreen-spike fullscreen-apps
+swift run fullscreen-spike arrange com.apple.Safari com.apple.TextEdit
 swift run fullscreen-spike bench --runs 20
 swift run fullscreen-spike bench com.apple.Safari com.apple.dt.Xcode --runs 10
 ```
@@ -29,7 +31,11 @@ swift run fullscreen-spike bench com.apple.Safari com.apple.dt.Xcode --runs 10
 | `windows <bundleId>` | Lists the app's windows: title, subrole, frame, fullscreen, which display |
 | `trace <bundleId> [--button]` | Brings the app forward, toggles fullscreen 0.5 s later, and prints the `AXFullScreen` attribute, the frame and the on-screen signals (status items, other apps' windows, the app's own windows) every 50 ms for 3 s. `--button` presses the window's green fullscreen button instead of setting the attribute |
 | `place <bundleId> [--display N] [--mode fullscreen\|maximized]` | Places the app's window once with `WindowPlacer` and prints each step with its timing. The default is display 0, fullscreen |
+| `fullscreen-apps [--display N]` | Lists the apps with a fullscreen window on the display (default 0), as `FullscreenSpaceSequencer` sees them |
+| `arrange <bundleId…> [--display N]` | Runs `FullscreenSpaceSequencer`: these apps in fullscreen in this order, then every other fullscreen app moved behind them. Prints each app and step, and which apps failed |
 | `bench [bundleId…] [--runs N]` | Repeats placements for each app (default: the 7 test apps, 20 runs), writes `results/bench-<timestamp>.csv` and prints a summary table |
+
+> **`arrange` takes over the screen** for 1–3 s per app, including every other fullscreen app on the display.
 
 > **`bench` takes over the screen.** It toggles fullscreen on real apps for several minutes (about 3 s per run). Don't use the mouse or keyboard while it runs. Each app is put back the way it was at the end: apps that weren't running are quit, and a window the bench made an app open is closed.
 

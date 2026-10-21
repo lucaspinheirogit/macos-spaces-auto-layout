@@ -134,13 +134,14 @@ Run them with the command in [`CLAUDE.md`](../CLAUDE.md#build-and-test) or ⌘U 
 
 ## Window engine
 
-`Packages/WindowEngine` is a local Swift package (tools 6.2, macOS 15, no dependencies) that puts one app's window on one display, maximized or in native fullscreen. The app target links it but doesn't call it yet; the [spike CLI](../spike/README.md) does. Its tests run with `swift test` in the package folder.
+`Packages/WindowEngine` is a local Swift package (tools 6.2, macOS 15, no dependencies) that puts one app's window on one display, maximized or in native fullscreen, and orders a display's fullscreen Spaces. The app target links it but doesn't call it yet; the [spike CLI](../spike/README.md) does. Its tests run with `swift test` in the package folder.
 
 ### Types
 
 | File | Responsibility |
 |---|---|
 | `WindowPlacer.swift` | `placeStandardWindow(ofBundleId:onDisplay:among:mode:onStep:)`: the step machine below. Its timing settings are properties with descriptive names (`existingWindowTimeout`, `settleTime`, `fullscreenRetryBackoff`…) |
+| `FullscreenSpaceSequencer.swift` | `arrange(setupBundleIds:onDisplay:among:onAppStarted:onStep:)`: see [Ordering fullscreen Spaces](#ordering-fullscreen-spaces). Returns a `FullscreenSpaceAppResult` per app and reports a `FullscreenSpaceProgress` before each |
 | `WindowPlacementMode.swift` | `.maximized` or `.fullscreen` |
 | `PlacementStep.swift` | The steps, as a `String` enum. The raw values (`app`, `move`, `enter-fullscreen`…) are what the CLI prints and the bench CSV stores |
 | `PlacementStepResult.swift` | One finished step: `step`, `succeeded`, `elapsedMilliseconds`, `attempts`, `diagnosticDetail` |
@@ -154,7 +155,7 @@ Run them with the command in [`CLAUDE.md`](../CLAUDE.md#build-and-test) or ⌘U 
 | `AccessibilityError.swift` | The `AXError` of a failed read or setter. `isInvalidElement` means the window or app is gone |
 | `AccessibilityPermission.swift` | `isTrusted(prompt:)` |
 | `AppLauncher.swift` | `runningApplication(bundleId:)` (skips terminated instances), `launchInBackground(_:)`, `reopen(_:activates:)` |
-| `ControllableWindow.swift`, `ApplicationLocator.swift`, `OnScreenWindowListProvider.swift`, `DisplayProvider.swift` | The seams (see below), each with its real implementation |
+| `ControllableWindow.swift`, `ApplicationLocator.swift`, `OnScreenWindowListProvider.swift`, `DisplayProvider.swift`, `StandardWindowPlacing.swift`, `FullscreenAppLocator.swift` | The seams (see below), each with its real implementation |
 | `Duration+WholeMilliseconds.swift` | `wholeMilliseconds`, rounded down |
 
 All rects are in global top-left coordinates (see the [glossary](glossary.md#coordinate-systems)). `ConnectedDisplays` converts `NSScreen.visibleFrame` using the main display's height from `CGDisplayBounds(CGMainDisplayID())`.
@@ -182,6 +183,19 @@ Failures:
 - **A hung app.** Every application and window element gets a 1 s Accessibility messaging timeout (`AXUIElementSetMessagingTimeout`), so one call can't block the main actor for the system default of about 6 s.
 - **Cancellation.** Every wait and pause throws `CancellationError` as soon as the task is cancelled, and `placeStandardWindow` rethrows it. Every other problem is a failed step, never a thrown error.
 
+### Ordering fullscreen Spaces
+
+No public API reorders Spaces, but entering fullscreen always adds the new Space at the end of the display's list, and leaving removes it ([research 06](research/06-fullscreen-space-order.md)). `FullscreenSpaceSequencer` uses that to leave a display's Spaces as Desktop → the setup's apps in setup order → every other fullscreen app:
+
+1. Lists the other apps fullscreen on the display (`FullscreenAppLocator`), leaving out the setup's apps. A bundle id listed twice in the setup counts once.
+2. For each setup app: places it fullscreen. If that step was `already-done`, its Space could be anywhere, so it places it maximized (leaving fullscreen) and fullscreen again.
+3. For each other app: places it maximized, then fullscreen again, which moves its Space to the end. Their order among themselves isn't kept.
+
+- An app that fails is reported in its `FullscreenSpaceAppResult` and the run carries on. If leaving fullscreen fails, it doesn't try to enter again.
+- `FullscreenSpaceAppResult.succeeded` means its last placement entered fullscreen.
+- Only an app's main or first standard window is moved. An app with several fullscreen windows keeps its other windows' Spaces where they were, ahead of the setup's apps.
+- Windows that aren't fullscreen are left alone. Apps that aren't running are launched by `WindowPlacer`.
+
 ### Isolation
 
 - The package has no default actor isolation. Pure value types (`ConnectedDisplay`, `PlacementStepResult`, `PlacementStep`, `WindowPlacementMode`, `OnScreenWindowListEntry`, `OnScreenWindowCounts`, the errors) are nonisolated and `Sendable`. `ScreenGeometry` and `FullscreenSpaceSignals` are nonisolated namespaces of pure functions.
@@ -197,6 +211,13 @@ Failures:
 | `ControllableWindow` | `AccessibilityWindow` | Frame, fullscreen and minimized state, and the setters, each throwing `AccessibilityError` |
 | `OnScreenWindowListProvider` | `CoreGraphicsWindowList` | The raw on-screen window list (`OnScreenWindowListEntry`), counted by `FullscreenSpaceSignals` |
 | `ConditionPoller(clock:pollInterval:)` | `ContinuousClock`, 50 ms | Elapsed time, waits and backoff pauses |
+
+`FullscreenSpaceSequencer` gets its two seams the same way:
+
+| Protocol | Real implementation | Gives the sequencer |
+|---|---|---|
+| `StandardWindowPlacing` | `WindowPlacer` | One placement, as above |
+| `FullscreenAppLocator` | `WorkspaceFullscreenAppLocator` | The bundle ids of the apps fullscreen on a display, front to back. Candidates come from `CGWindowListCopyWindowInfo` over all Spaces (a layer-0 window with a fullscreen frame on the display, not this process); each one's main or first standard window must read `AXFullScreen` true |
 
 `DisplayProvider` (real: `ConnectedDisplayProvider`) lists the displays for callers; the placer takes the display list as an argument.
 
