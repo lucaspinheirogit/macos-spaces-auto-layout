@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DeskSetupListView: View {
     let store: DeskSetupStore
+    let accessibilityAccess: AccessibilityAccess
 
     private enum Layout {
         static let padding: CGFloat = 20
@@ -22,6 +23,10 @@ struct DeskSetupListView: View {
             }
             .padding(.horizontal, 4)
 
+            if !accessibilityAccess.isGranted {
+                AccessibilityBannerView(accessibilityAccess: accessibilityAccess)
+            }
+
             if let reason = store.savingBlockedReason {
                 SavingBlockedBannerView(reason: reason)
             }
@@ -41,5 +46,5 @@ struct DeskSetupListView: View {
 }
 
 #Preview {
-    DeskSetupListView(store: DeskSetupStore(storage: .temporary))
+    DeskSetupListView(store: DeskSetupStore(storage: .temporary), accessibilityAccess: AccessibilityAccess())
 }

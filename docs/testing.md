@@ -34,4 +34,5 @@ Some behaviour can only be seen on a real desktop. A PR that changes it lists th
 - **A second display without a monitor:** create a [BetterDisplay](https://github.com/waydabber/BetterDisplay) virtual screen. Then confirm on a real monitor, because timing and display identity can differ.
 - **The app:**
   - Edit and save a setup, relaunch, and check the change is still there.
+  - Apply now: with a one-display setup and a few other apps in fullscreen, apply it from the menu bar and check the order of Spaces in Mission Control. Revoke Accessibility access in System Settings and check the banner and menu item come back within a second.
   - For storage changes, also start from a `setups.json` written by the previous build.

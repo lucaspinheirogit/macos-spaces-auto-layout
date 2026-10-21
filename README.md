@@ -4,13 +4,11 @@ A macOS app for people who move between desks. You define **setups** (for exampl
 
 ## Status
 
-The app is currently a **setup editor**:
+- The **Setups** window lists your setups and lets you rename them and add apps to each display. An app can be on only one display of a setup. Everything is saved to disk.
+- The **menu bar item** applies a setup on demand (**Apply now**). For now that works for one-display setups: their apps open if needed and go fullscreen on the main display, in the order listed, and every other fullscreen app moves behind them.
+- The app needs **Accessibility access** to move windows. Until it has it, the Setups window and the menu explain why and open System Settings.
 
-- It lists your setups and lets you rename them.
-- You can add apps to each display of a setup. An app can be on only one display of a setup.
-- Everything is saved to disk.
-
-The window engine that actually moves apps between displays isn't built yet. See [docs/architecture.md](docs/architecture.md#not-built-yet) for what's missing, [docs/roadmap.md](docs/roadmap.md) for what's being built next, and [docs/research/](docs/research/README.md) for the feasibility research.
+Setups with several displays can't be applied yet: displays aren't matched to setups. See [docs/architecture.md](docs/architecture.md#not-built-yet) for what's missing, [docs/roadmap.md](docs/roadmap.md) for what's being built next, and [docs/research/](docs/research/README.md) for the feasibility research.
 
 ## Requirements
 
@@ -28,7 +26,8 @@ macos-spaces-auto-layout/          App target
   MacosSpacesAutoLayoutApp.swift   Entry point, owns the DeskSetupStore
   DeskSetups/                      DeskSetup, DeskSetupDisplay, AppPlacement, the editor model
   Persistence/                     DeskSetupStore (observable) and the versioned JSON file
-  Views/                           Setups list, setup editor and their parts
+  Applying/                        DeskSetupApplier (Apply now) and AccessibilityAccess
+  Views/                           Setups list, setup editor, menu bar menu and their parts
 macos-spaces-auto-layoutTests/     Unit tests (Swift Testing) and Fixtures/ with saved-file examples
 Packages/WindowEngine/             Window engine package: displays, Accessibility, placing windows
 spike/                             Fullscreen spike CLI and bench (see spike/README.md)

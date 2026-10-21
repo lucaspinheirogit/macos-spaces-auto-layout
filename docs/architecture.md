@@ -9,11 +9,15 @@ MacosSpacesAutoLayoutApp ──owns──▶ DeskSetupStore ──reads/writes�
           │                              ▲
           ▼                              │ update(_:)
    DeskSetupListView ──sheet──▶ DeskSetupEditorView ──▶ DeskSetupEditorModel (edits a copy of a DeskSetup)
+
+MenuBarExtra ──▶ MenuBarContentView ──apply(_:)──▶ DeskSetupApplier ──▶ FullscreenSpaceSequencer (WindowEngine)
+                                                         │
+                                                         └──checks──▶ AccessibilityAccess
 ```
 
-- A single SwiftUI window.
+- One SwiftUI window ("Setups") and a menu bar item.
 - The app has no external dependencies or helper tools; it uses only Apple frameworks.
-- Not sandboxed (`ENABLE_APP_SANDBOX = NO`), because the future window engine needs the Accessibility API, which doesn't work in the sandbox. See [research 02 §6](research/02-technical-apis.md#6-permissions-and-distribution).
+- Not sandboxed (`ENABLE_APP_SANDBOX = NO`), because the window engine needs the Accessibility API, which doesn't work in the sandbox. See [research 02 §6](research/02-technical-apis.md#6-permissions-and-distribution).
 
 ## Modules
 
@@ -21,19 +25,23 @@ All paths are under `macos-spaces-auto-layout/`.
 
 | Path | Responsibility |
 |---|---|
-| `MacosSpacesAutoLayoutApp.swift` | `@main`. Creates the `DeskSetupStore` and the "Setups" window. Under XCTest it gives the store a temporary file (see [Tests](#tests)) |
+| `MacosSpacesAutoLayoutApp.swift` | `@main`. Creates the `DeskSetupStore`, `AccessibilityAccess` and `DeskSetupApplier`, the "Setups" window and the menu bar item. Under XCTest it gives the store a temporary file (see [Tests](#tests)) and doesn't monitor the permission |
 | `AppIdentity.swift` | The app's bundle identifier, shared by the storage folder and the logging subsystem |
 | `DeskSetups/DeskSetup.swift` | Value types `DeskSetup`, `DeskSetupDisplay`, `AppPlacement`; `firstLaunchSetups`, `displayCountSymbolName`, `displayCountLabel` and `display(containingBundleId:)` |
 | `DeskSetups/AppPlacement+Bundle.swift` | `AppPlacement(appURL:)`: reads the bundle identifier and the (localized) name from an `.app` bundle |
 | `DeskSetups/DeskSetupEditorModel.swift` | `@Observable` state of the editor sheet: the setup being edited, `isMainDisplay(_:)`, `addApp(fromBundleAt:toDisplay:)` and `save()` |
+| `Applying/AccessibilityAccess.swift` | `@Observable` `isGranted`: whether the app may control other apps. `startMonitoring()` re-reads it every second, since macOS doesn't announce changes, so granting or revoking shows up without a relaunch. `requestAccess()` shows macOS's prompt and opens the Accessibility pane of System Settings |
+| `Applying/DeskSetupApplier.swift` | `@Observable` `state` (idle, applying with `FullscreenSpaceProgress`, finished with an `Outcome`). `apply(_:)`, see [Applying a setup](#applying-a-setup) |
 | `Persistence/DeskSetupFile.swift` | The file format: `{ schemaVersion, setups }`, decoding of every version, and duplicate-id repair |
 | `Persistence/DeskSetupFileStorage.swift` | Reads and writes a `DeskSetupFile` at a file URL, and moves unreadable files aside. `.default` is the real location; `.temporary` is a throwaway file for SwiftUI previews and the test host |
 | `Persistence/DeskSetupStore.swift` | `@Observable` list of setups. `update(_:)` replaces a setup by id and saves, or throws `DeskSetupStoreError`. `savingBlockedReason` says why saving is refused, if it is |
-| `Views/DeskSetupListView.swift` | The setups list, with a banner when saving is blocked. Scrolls when it's taller than the window allows |
+| `Views/DeskSetupListView.swift` | The setups list, with banners when Accessibility access is missing and when saving is blocked. Scrolls when it's taller than the window allows |
 | `Views/DeskSetupRowView.swift` | One setup in the list: icon, name, display count, Edit button. Presents the editor sheet |
 | `Views/DeskSetupEditorView.swift` | Editor sheet: name field, one column per display, the app file picker, alerts, Cancel/Save |
 | `Views/DeskSetupDisplayColumnView.swift` | One display in the editor: name, MAIN badge, its apps, Add App button |
 | `Views/AppPlacementRowView.swift` | One app in a display column: icon and name |
+| `Views/AccessibilityBannerView.swift` | Explains why the app needs Accessibility access, with a button to open System Settings |
+| `Views/MenuBarContentView.swift` | The menu bar item's menu: a Grant Accessibility Access item while it's missing, the apply status, one Apply now item per setup, Open Setups…, Quit |
 | `Views/SavingBlockedBannerView.swift` | The warning shown above the list when the store refuses to save |
 | `Views/CardStyle.swift` | `cardStyle()`: the rounded, shadowed background of rows, columns and the banner |
 | `Views/CappedHeightScrollView.swift` | A vertical scroll view as tall as its content up to a maximum, for the list and the editor columns |
@@ -107,6 +115,17 @@ When saving is blocked, the list shows a banner with `SavingBlockedReason.messag
 3. Renaming and adding apps change only the model's copy.
 4. **Cancel** closes the sheet and drops the model. **Save** calls `model.save()`, which calls `store.update(_:)`. The sheet closes only when that succeeds; otherwise it stays open with the edits and shows the error in an alert.
 
+## Applying a setup
+
+The menu bar item lists every setup under **Apply now**. `DeskSetupApplier.apply(_:)`:
+
+1. Re-reads the Accessibility permission. Without it: `.needsAccessibility`.
+2. Only one-display setups with at least one app can be applied (`canApply(_:)`), because displays aren't matched to setups yet. Others are disabled in the menu and give `.needsSingleDisplay` or `.noApps`.
+3. Takes the main display (the first from `ConnectedDisplays`) and runs `FullscreenSpaceSequencer` with the apps of the setup's only display, in order: they go fullscreen first, then every other fullscreen app on that display moves behind them. Every app is placed fullscreen; there's no mode per app yet.
+4. `state` follows the run: `.applying` with the app being arranged, then `.finished` with `.arranged(appCount:)` or `.someAppsFailed(appNames:)`. Failures are logged per step. The menu shows the state as one line.
+
+A second apply while one runs does nothing.
+
 ## Concurrency
 
 - Swift 6 language mode.
@@ -123,18 +142,21 @@ When saving is blocked, the list shows a banner with `SavingBlockedReason.messag
 | `DeskSetupFileFormatTests` | The fixtures: version 0 and 1 decode, the encoded file matches the version 1 fixture and its keys, unknown keys are ignored, newer versions, other data is a `DecodingError`, duplicate-id repair |
 | `DeskSetupStoreTests` | Every row of the storage table above, repeated updates, backup naming and name collisions, and that the test host uses temporary storage |
 | `DeskSetupEditorModelTests` | Every `AddAppOutcome`, the main display, edits staying local until saved, saving, and a failed save keeping the edits |
+| `DeskSetupApplierTests` | `apply(_:)` against a recording placer: setup order on the main display, other fullscreen apps, failed app names, each refusal, progress, a second apply while running |
+| `AccessibilityAccessTests` | The permission read at start, `refresh()` seeing grant and revoke, monitoring picking up a change |
+| `MenuBarContentViewTests` | The Apply now titles and the status line for each state |
 | `AppPlacementBundleTests` | Name priority (localized `CFBundleDisplayName` → `CFBundleDisplayName` → localized `CFBundleName` → `CFBundleName` → file name), nil without a bundle id or Info.plist |
 
 - `TestSupport.swift` holds the fixture loader, the setup the fixtures decode to, and `makeAppBundle(in:named:plist:localized:)`.
 - The fixture JSON files are resources of the test target; the synchronized folder copies them to the root of the test bundle.
 - Each test works in its own temporary folder: Swift Testing creates a new suite instance per test, and `deinit` deletes the folder.
-- The test target doesn't use `MainActor` default isolation, so the suites that use the store or the editor model are marked `@MainActor`.
+- The test target doesn't use `MainActor` default isolation, so the suites that use the store, the editor model, the applier or the menu are marked `@MainActor`.
 
 Run them with the command in [`CLAUDE.md`](../CLAUDE.md#build-and-test) or ⌘U in Xcode. See [testing.md](testing.md) for how to add tests and what to check by hand.
 
 ## Window engine
 
-`Packages/WindowEngine` is a local Swift package (tools 6.2, macOS 15, no dependencies) that puts one app's window on one display, maximized or in native fullscreen, and orders a display's fullscreen Spaces. The app target links it but doesn't call it yet; the [spike CLI](../spike/README.md) does. Its tests run with `swift test` in the package folder.
+`Packages/WindowEngine` is a local Swift package (tools 6.2, macOS 15, no dependencies) that puts one app's window on one display, maximized or in native fullscreen, and orders a display's fullscreen Spaces. The app calls it through `DeskSetupApplier`; the [spike CLI](../spike/README.md) drives it directly. Its tests run with `swift test` in the package folder.
 
 ### Types
 
@@ -237,7 +259,7 @@ No public API reorders Spaces, but entering fullscreen always adds the new Space
 | Goal | Today | Needed (see [roadmap](roadmap.md)) |
 |---|---|---|
 | Setups are real desk arrangements | Generic "Display N" columns | Display fingerprints captured from the connected hardware (UUIDs) |
-| Apps go fullscreen or maximized on their display | Apps are only listed. The [window engine](#window-engine) can place one window, but the app doesn't call it | Window engine using the Accessibility API, with a mode per app (Maximized by default) and a per-app option to launch the app if it isn't running |
+| Apps go fullscreen or maximized on their display | Apply now puts a one-display setup's apps in fullscreen, in order (launching any that aren't running) | A mode per app (Maximized by default), a per-app launch option, and setups with several displays |
 | Switch automatically when moving between desks | None | Display change watcher, setup matching, and a per-setup choice to apply automatically, ask first, or do nothing |
 | Manage setups | Rename and add apps only | Add and delete setups and displays; remove and reorder apps |
-| Easy install for others | Local Xcode build | Accessibility permission onboarding, notarized release |
+| Easy install for others | Local Xcode build; the app asks for Accessibility access | Notarized release |

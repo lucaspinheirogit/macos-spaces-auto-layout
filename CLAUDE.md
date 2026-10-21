@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-A macOS app that arranges windows by "setup": the user defines which apps go on which display, and the app puts them there (maximized or in native fullscreen) when the user plugs into that desk. Today it's a setup editor; the window engine is being built.
+A macOS app that arranges windows by "setup": the user defines which apps go on which display, and the app puts them there (maximized or in native fullscreen) when the user plugs into that desk. Today it edits setups and applies one-display setups from the menu bar; display matching is being built.
 
 ## Start here
 
@@ -20,8 +20,8 @@ A macOS app that arranges windows by "setup": the user defines which apps go on 
 
 Three build units, each with its own tests:
 
-- **The app** (`macos-spaces-auto-layout/`, Xcode project): SwiftUI setup editor plus `setups.json` persistence. It links `WindowEngine` but doesn't call it yet.
-- **`Packages/WindowEngine`** (local Swift package): places one app's window on one display, maximized or fullscreen, through the Accessibility API. Everything that touches macOS comes in through protocol seams, so the tests run on fakes and a `TestClock`.
+- **The app** (`macos-spaces-auto-layout/`, Xcode project): SwiftUI setup editor plus `setups.json` persistence, and a menu bar item that applies one-display setups through `WindowEngine`.
+- **`Packages/WindowEngine`** (local Swift package): places one app's window on one display, maximized or fullscreen, through the Accessibility API, and orders a display's fullscreen Spaces. Everything that touches macOS comes in through protocol seams, so the tests run on fakes and a `TestClock`.
 - **`spike/`** (Swift package): the `fullscreen-spike` CLI, which drives `WindowEngine` on real windows, and the bench report code.
 
 Actor isolation differs between them, and that trips up new code: the app target defaults to `MainActor`, but its test target and `WindowEngine` don't. See [`docs/conventions.md`](docs/conventions.md#concurrency).
